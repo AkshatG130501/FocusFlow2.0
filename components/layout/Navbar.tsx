@@ -38,7 +38,9 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <BookOpen className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl tracking-tight">FocusFlow</span>
+              <span className="font-bold text-xl tracking-tight">
+                FocusFlow
+              </span>
             </Link>
           </div>
 
@@ -73,7 +75,7 @@ export default function Navbar() {
           {/* CTA Button */}
           <div className="hidden md:block">
             <Button size="lg" className="rounded-full px-6">
-              Start Learning
+              Sign In With Google
             </Button>
           </div>
 
@@ -129,7 +131,7 @@ export default function Navbar() {
             </Link>
             <div className="pt-2">
               <Button className="w-full" size="lg">
-                Start Learning
+                Sign In With Google
               </Button>
             </div>
           </div>

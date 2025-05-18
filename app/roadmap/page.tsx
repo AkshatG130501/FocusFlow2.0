@@ -6,7 +6,6 @@ import { Download, ChevronRight, Check } from "lucide-react";
 import { motion } from "@/lib/motion";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -89,7 +88,13 @@ const sampleRoadmap: RoadmapNode[] = [
   },
 ];
 
-function RoadmapNode({ node, level = 0 }: { node: RoadmapNode; level?: number }) {
+function RoadmapNode({
+  node,
+  level = 0,
+}: {
+  node: RoadmapNode;
+  level?: number;
+}) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const statusColors = {
@@ -101,13 +106,21 @@ function RoadmapNode({ node, level = 0 }: { node: RoadmapNode; level?: number })
   return (
     <div className="relative">
       <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-800" />
-      
+
       <div className="relative flex items-start gap-4 py-4">
-        <div className={`w-8 h-8 rounded-full ${statusColors[node.status]} flex items-center justify-center shrink-0`}>
-          {node.status === "completed" && <Check className="w-4 h-4 text-white" />}
-          {node.status === "current" && <div className="w-3 h-3 bg-white rounded-full" />}
+        <div
+          className={`w-8 h-8 rounded-full ${
+            statusColors[node.status]
+          } flex items-center justify-center shrink-0`}
+        >
+          {node.status === "completed" && (
+            <Check className="w-4 h-4 text-white" />
+          )}
+          {node.status === "current" && (
+            <div className="w-3 h-3 bg-white rounded-full" />
+          )}
         </div>
-        
+
         <Card className="flex-grow">
           <CardHeader className="p-4">
             <div className="flex items-center justify-between">
