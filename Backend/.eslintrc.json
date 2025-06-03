@@ -1,0 +1,10 @@
+// filepath: d:\FocusFlow2.0\Backend\.eslintrc.json
+{
+  "parser": "@typescript-eslint/parser",
+  "extends": ["plugin:@typescript-eslint/recommended"],
+  "parserOptions": {
+    "ecmaVersion": 2018,
+    "sourceType": "module"
+  },
+  "rules": {}
+}
