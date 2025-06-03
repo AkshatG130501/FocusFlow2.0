@@ -7,10 +7,7 @@ import {
   ChevronRight, 
   CheckCircle, 
   Circle,
-  Youtube,
   FileText,
-  Code,
-  ExternalLink,
 } from "lucide-react";
 import { Topic, Resource, Question } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -94,18 +91,10 @@ export default function StudyContent({
       
       <div className="grid grid-cols-1 gap-8">
         <Tabs defaultValue="content" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-1 mb-8">
             <TabsTrigger value="content" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Lesson Content
-            </TabsTrigger>
-            <TabsTrigger value="resources" className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Resources
-            </TabsTrigger>
-            <TabsTrigger value="practice" className="flex items-center gap-2">
-              <Code className="h-4 w-4" />
-              Practice
             </TabsTrigger>
           </TabsList>
           
@@ -157,48 +146,7 @@ export default function StudyContent({
               </Card>
             </TabsContent>
             
-            <TabsContent value="resources" className="mt-0">
-              <Card>
-                <CardContent className="pt-6">
-                  <h2 className="text-xl font-semibold mb-6">Recommended Resources</h2>
-                  
-                  <div className="space-y-4">
-                    <ResourceList resources={mockResources} />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="practice" className="mt-0">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold">Practice Questions</h2>
-                  </div>
-                  
-                  <div className="space-y-6 mb-8">
-                    <QuestionList questions={mockQuestions} />
-                  </div>
-                  
-                  <h2 className="text-xl font-semibold mb-4">Code Playground</h2>
-                  <p className="mb-4 text-gray-700 dark:text-gray-300">
-                    Try implementing a solution to the practice problems in this editor:
-                  </p>
-                  
-                  <CodeEditor
-                    initialCode={`function solution(input) {
-  // Your code here
-  
-  return result;
-}
 
-// Test your solution
-console.log(solution([1, 2, 3, 4, 5]));`}
-                    language="javascript"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
           </motion.div>
         </Tabs>
       </div>
