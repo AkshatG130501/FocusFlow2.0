@@ -93,7 +93,7 @@ export default function ResumeUpload({ resumeFile, setResumeFile }: ResumeUpload
             <Button 
               variant="outline" 
               size="sm"
-              className="border-border/80 hover:border-primary/50 hover:bg-primary/5"
+              className="border-border/80 hover:border-primary/50 hover:bg-primary/5 text-foreground hover:text-primary font-medium"
               onClick={() => document.getElementById("resume-upload")?.click()}
             >
               Browse Files

@@ -35,19 +35,7 @@ export default function RoadmapHeader({ onStartLearning }: RoadmapHeaderProps) {
           </motion.h1>
         </div>
         
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <Button 
-            onClick={onStartLearning}
-            className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90 transition-colors"
-          >
-            <BookOpen className="h-4 w-4 mr-2" />
-            Start Learning
-          </Button>
-        </motion.div>
+        {/* Button moved to the bottom section */}
       </div>
       
       <motion.div 
@@ -80,11 +68,20 @@ export default function RoadmapHeader({ onStartLearning }: RoadmapHeaderProps) {
             </div>
           </div>
           
-          <div className="mt-4 md:mt-0 flex items-center">
-            <div className="bg-muted h-2 rounded-full w-40 overflow-hidden">
-              <div className="bg-primary h-full rounded-full w-[15%]"></div>
-            </div>
-            <span className="ml-3 text-sm font-medium text-foreground/80">15% Complete</span>
+          <div className="mt-4 md:mt-0">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <Button 
+                onClick={onStartLearning}
+                className="bg-primary hover:bg-primary/90 transition-colors"
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Start Learning
+              </Button>
+            </motion.div>
           </div>
         </div>
       </motion.div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   BrainCircuit,
   Sparkles,
@@ -17,17 +18,33 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function LandingPage() {
+  const router = useRouter();
   const [goal, setGoal] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitCount, setSubmitCount] = useState(0);
+
+  // Reset state when component mounts (after navigation)
+  useEffect(() => {
+    // Reset modal state and goal when component mounts
+    setIsModalOpen(false);
+    setGoal("");
+  }, []);
 
   const handleGoalSubmit = () => {
     if (goal.trim()) {
+      // Increment submit count to force re-render of child components
+      setSubmitCount(prev => prev + 1);
       setIsModalOpen(true);
     }
   };
 
   const handleModalClose = () => {
+    // First set modal to closed
     setIsModalOpen(false);
+    
+    // Reset the submit count to ensure the button can be clicked again
+    setSubmitCount(0);
+    
     // Wait a bit before resetting the goal to avoid UI flicker
     setTimeout(() => {
       setGoal("");
@@ -316,7 +333,11 @@ export default function LandingPage() {
       </footer>
 
       {isModalOpen && (
-        <OnboardingModal goal={goal} onClose={handleModalClose} />
+        <OnboardingModal 
+          key={`modal-${submitCount}`} 
+          goal={goal} 
+          onClose={handleModalClose} 
+        />
       )}
     </div>
   );
