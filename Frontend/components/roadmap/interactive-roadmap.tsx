@@ -3,7 +3,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoadmapItem } from "@/lib/types";
-import { CheckCircle, Circle, ChevronDown, ChevronUp, ArrowRight, ArrowLeft } from "lucide-react";
+import {
+  CheckCircle,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,29 +20,31 @@ interface InteractiveRoadmapProps {
 }
 
 // Week Card Component
-function WeekCard({ 
-  item, 
+function WeekCard({
+  item,
   weekNumber,
-  onToggleComplete, 
+  onToggleComplete,
   isExpanded,
-  onToggleExpand
-}: { 
-  item: RoadmapItem; 
+  onToggleExpand,
+}: {
+  item: RoadmapItem;
   weekNumber: number;
-  onToggleComplete: (id: string) => void; 
+  onToggleComplete: (id: string) => void;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
 }) {
   // Calculate progress
-  const completedTopics = item.topics.filter(topic => topic.completed).length;
+  const completedTopics = item.topics.filter((topic) => topic.completed).length;
   const progress = (completedTopics / item.topics.length) * 100;
-  
+
   return (
     <div className="bg-card border border-border/50 rounded-lg shadow-sm overflow-hidden">
       {/* Card Header */}
       <div className="p-4 bg-muted/30">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-foreground">Week {weekNumber}</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            Week {weekNumber}
+          </h3>
           <Button
             variant="ghost"
             size="sm"
@@ -59,13 +68,11 @@ function WeekCard({
           </Button>
         </div>
       </div>
-      
+
       {/* Card Body */}
       <div className="p-4">
-        <p className="text-sm text-muted-foreground mb-4">
-          {item.description}
-        </p>
-        
+        <p className="text-sm text-muted-foreground mb-4">{item.description}</p>
+
         {/* Progress Bar */}
         <div className="mt-2">
           <div className="flex items-center justify-between mb-1">
@@ -85,11 +92,11 @@ function WeekCard({
             />
           </div>
         </div>
-        
+
         {/* View Topics Button */}
         <div className="mt-4 flex justify-end">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -100,7 +107,7 @@ function WeekCard({
           </Button>
         </div>
       </div>
-      
+
       {/* Expandable Topics List */}
       <AnimatePresence>
         {isExpanded && (
@@ -112,11 +119,13 @@ function WeekCard({
             className="border-t border-border/50 bg-background/50"
           >
             <div className="p-4">
-              <h4 className="text-sm font-medium text-foreground mb-3">Topics:</h4>
+              <h4 className="text-sm font-medium text-foreground mb-3">
+                Topics:
+              </h4>
               <ul className="space-y-3">
                 {item.topics.map((topic) => (
-                  <motion.li 
-                    key={topic.id} 
+                  <motion.li
+                    key={topic.id}
                     className="flex items-start"
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -130,10 +139,14 @@ function WeekCard({
                       )}
                     </div>
                     <div className="ml-2">
-                      <p className={cn(
-                        "text-sm font-medium",
-                        topic.completed ? "text-muted-foreground line-through" : "text-foreground"
-                      )}>
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          topic.completed
+                            ? "text-muted-foreground line-through"
+                            : "text-foreground"
+                        )}
+                      >
                         {topic.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -151,29 +164,34 @@ function WeekCard({
   );
 }
 
-export default function InteractiveRoadmap({ items, onToggleComplete }: InteractiveRoadmapProps) {
+export default function InteractiveRoadmap({
+  items,
+  onToggleComplete,
+}: InteractiveRoadmapProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(1);
   const [animatingIn, setAnimatingIn] = useState(false);
-  const [animatingLines, setAnimatingLines] = useState<{[key: number]: boolean}>({});
-  
+  const [animatingLines, setAnimatingLines] = useState<{
+    [key: number]: boolean;
+  }>({});
+
   // Reset visible count when items change
   useEffect(() => {
     setVisibleCount(1);
     setAnimatingLines({});
   }, [items]);
-  
+
   const toggleExpand = (id: string) => {
     setExpandedItem(expandedItem === id ? null : id);
   };
-  
+
   const showNextBox = (index: number) => {
     if (visibleCount <= index + 1 && !animatingIn) {
       setAnimatingIn(true);
-      
+
       // First animate the connecting line
-      setAnimatingLines(prev => ({ ...prev, [index]: true }));
-      
+      setAnimatingLines((prev) => ({ ...prev, [index]: true }));
+
       // Then show the next box after line animation completes
       setTimeout(() => {
         setVisibleCount(index + 2);
@@ -181,57 +199,49 @@ export default function InteractiveRoadmap({ items, onToggleComplete }: Interact
       }, 600);
     }
   };
-  
+
   // Animation variants
   const itemVariants = {
     hidden: { opacity: 0, scale: 0.9 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       scale: 1,
-      transition: { 
-        duration: 0.4
-      }
-    }
+      transition: {
+        duration: 0.4,
+      },
+    },
   };
-  
+
   const lineVariants = {
     hidden: { pathLength: 0 },
-    visible: { 
+    visible: {
       pathLength: 1,
-      transition: { 
+      transition: {
         duration: 0.5,
-        ease: "easeInOut"
-      }
-    }
+        ease: "easeInOut",
+      },
+    },
   };
-  
+
   const arrowVariants = {
     hidden: { opacity: 0, scale: 0 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       scale: 1,
-      transition: { 
+      transition: {
         duration: 0.3,
-        delay: 0.2
-      }
-    }
+        delay: 0.2,
+      },
+    },
   };
 
   return (
     <div className="py-6 px-4">
       <div className="max-w-5xl mx-auto relative min-h-[500px]">
-        {/* Background Container */}
-        <div 
-          className="absolute inset-0 bg-background border border-muted/30 rounded-xl shadow-sm z-0"
-          style={{ 
-            width: '100%',
-            height: `${Math.max(500, (items.length * 200) + 100)}px` 
-          }}
-        />
         {/* SVG for connecting lines */}
-        <svg 
-          className="absolute top-0 left-0 w-full h-full z-0 overflow-visible" 
-          style={{ pointerEvents: 'none' }}
+        <svg
+          className="absolute top-0 left-0 w-full h-full z-0 overflow-visible"
+          style={{ pointerEvents: "none" }}
         >
           {/* Connecting lines between boxes */}
           {items.map((_, index) => {
@@ -240,7 +250,9 @@ export default function InteractiveRoadmap({ items, onToggleComplete }: Interact
               return (
                 <motion.path
                   key={`line-${index}`}
-                  d={`M ${index < visibleCount ? '320' : '0'} ${120 + (index * 200)} H 680 V ${120 + ((index + 1) * 200)}`}
+                  d={`M ${index < visibleCount ? "320" : "0"} ${
+                    120 + index * 200
+                  } H 680 V ${120 + (index + 1) * 200}`}
                   stroke="currentColor"
                   strokeWidth="2"
                   fill="none"
@@ -255,7 +267,9 @@ export default function InteractiveRoadmap({ items, onToggleComplete }: Interact
               return (
                 <motion.path
                   key={`line-${index}`}
-                  d={`M ${index < visibleCount ? '680' : '1000'} ${120 + (index * 200)} H 320 V ${120 + ((index + 1) * 200)}`}
+                  d={`M ${index < visibleCount ? "680" : "1000"} ${
+                    120 + index * 200
+                  } H 320 V ${120 + (index + 1) * 200}`}
                   stroke="currentColor"
                   strokeWidth="2"
                   fill="none"
@@ -269,49 +283,56 @@ export default function InteractiveRoadmap({ items, onToggleComplete }: Interact
             return null;
           })}
         </svg>
-        
+
         {/* Week boxes in zigzag pattern */}
         {items.map((item, index) => {
           const isEven = index % 2 === 0;
           const isVisible = index < visibleCount;
-          
+
           return (
             <div key={item.id} className="relative">
               {/* Week Card */}
-              <motion.div 
-                className={`absolute ${isEven ? 'left-0' : 'right-0'} w-[300px] z-10`}
+              <motion.div
+                className={`absolute ${
+                  isEven ? "left-0" : "right-0"
+                } w-[300px] z-10`}
                 style={{ top: `${index * 200}px` }}
                 initial="hidden"
                 animate={isVisible ? "visible" : "hidden"}
                 variants={itemVariants}
               >
-                <WeekCard 
-                  item={item} 
+                <WeekCard
+                  item={item}
                   weekNumber={index + 1}
                   onToggleComplete={onToggleComplete}
                   isExpanded={expandedItem === item.id}
                   onToggleExpand={toggleExpand}
                 />
               </motion.div>
-              
+
               {/* Arrow button to reveal next box */}
-              {index < items.length - 1 && isVisible && visibleCount === index + 1 && (
-                <motion.div 
-                  className={`absolute cursor-pointer z-20 ${isEven ? 'right-0 mr-[350px]' : 'left-0 ml-[350px]'}`}
-                  style={{ top: `${index * 200 + 60}px` }}
-                  initial="hidden"
-                  animate="visible"
-                  variants={arrowVariants}
-                  onClick={() => showNextBox(index)}
-                >
-                  <div className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-full p-3 shadow-sm">
-                    {isEven ? 
-                      <ArrowRight className="h-6 w-6 text-primary" /> : 
-                      <ArrowLeft className="h-6 w-6 text-primary" />
-                    }
-                  </div>
-                </motion.div>
-              )}
+              {index < items.length - 1 &&
+                isVisible &&
+                visibleCount === index + 1 && (
+                  <motion.div
+                    className={`absolute cursor-pointer z-20 ${
+                      isEven ? "right-0 mr-[350px]" : "left-0 ml-[350px]"
+                    }`}
+                    style={{ top: `${index * 200 + 60}px` }}
+                    initial="hidden"
+                    animate="visible"
+                    variants={arrowVariants}
+                    onClick={() => showNextBox(index)}
+                  >
+                    <div className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-full p-3 shadow-sm">
+                      {isEven ? (
+                        <ArrowRight className="h-6 w-6 text-primary" />
+                      ) : (
+                        <ArrowLeft className="h-6 w-6 text-primary" />
+                      )}
+                    </div>
+                  </motion.div>
+                )}
             </div>
           );
         })}
