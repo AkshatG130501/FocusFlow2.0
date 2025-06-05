@@ -56,10 +56,10 @@ export default function GoalInput({ goal, setGoal, onSubmit }: GoalInputProps) {
         />
         <button
           type="submit"
-          className="absolute right-3 bottom-3 flex items-center justify-center rounded-lg bg-primary hover:bg-primary/90 transition-colors px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute right-3 bottom-3 flex items-center justify-center rounded-lg bg-primary hover:bg-primary/90 transition-colors px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed text-white"
           disabled={!goal.trim()}
         >
-          Create my plan
+          Create My plan
           <ArrowRight className="h-5 w-5 ml-2 inline-block" />
         </button>
       </div>
