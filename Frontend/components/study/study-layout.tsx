@@ -277,11 +277,12 @@ export default function StudyLayout({
                     />
                   </div>
                 </div>
-
-                {/* Scrollable content - only scrolls when user interacts with it */}
                 <div
-                  className="flex-1 overflow-y-auto"
-                  style={{ overscrollBehavior: "contain" }}
+                  className="flex-1 overflow-y-auto h-full custom-scrollbar"
+                  style={{
+                    overscrollBehavior: "contain",
+                    maxHeight: "calc(100vh - 120px)",
+                  }}
                 >
                   <nav className="p-2 space-y-2">
                     {filteredTopics.map((topic) => (
@@ -343,10 +344,12 @@ export default function StudyLayout({
                 </div>
               </div>
 
-              {/* Scrollable content - only scrolls when user interacts with it */}
               <div
-                className="flex-1 overflow-y-auto"
-                style={{ overscrollBehavior: "contain" }}
+                className="flex-1 overflow-y-auto h-full custom-scrollbar"
+                style={{
+                  overscrollBehavior: "contain",
+                  maxHeight: "calc(100vh - 120px)",
+                }}
               >
                 <nav className="p-2 space-y-2">
                   {Object.entries(groupedTopics).map(([day, dayTopics]) => (
