@@ -56,13 +56,22 @@ export default function GoalInput({ goal, setGoal, onSubmit }: GoalInputProps) {
         />
         <Button
           type="submit"
-          className="absolute right-3 bottom-3"
+          className="absolute right-3 bottom-3 sm:flex hidden"
           disabled={!goal.trim()}
           variant="default"
           size="default"
         >
           Create My Plan
           <ArrowRight className="h-5 w-5 ml-2" />
+        </Button>
+        <Button
+          type="submit"
+          className="absolute right-3 bottom-3 sm:hidden flex"
+          disabled={!goal.trim()}
+          variant="default"
+          size="sm"
+        >
+          <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
 
