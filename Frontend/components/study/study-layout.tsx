@@ -163,8 +163,8 @@ export default function StudyLayout({
           animate={{ width: sidebarOpen ? 320 : 64 }}
           transition={{ duration: 0.2 }}
         >
-          {/* Collapse Button */}
-          <div className="absolute top-1/2 -right-4 z-50">
+          {/* Collapse Button - Always visible and centered */}
+          <div className="absolute top-1/2 -right-4 z-50 transform -translate-y-1/2">
             <Button
               variant="default"
               size="icon"
