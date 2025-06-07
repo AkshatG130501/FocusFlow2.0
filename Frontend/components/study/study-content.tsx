@@ -15,7 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { dummyMarkdown } from "@/lib/dummy-content";
 interface StudyContentProps {
   topic: Topic | null;
   isLoading: boolean;
@@ -113,63 +117,15 @@ export default function StudyContent({
               <Card>
                 <CardContent className="pt-6">
                   <div className="prose dark:prose-invert max-w-none">
-                    <p className="text-lg mb-4">{topic.description}</p>
-
-                    <h2 className="text-xl font-semibold mt-6 mb-4">
-                      Overview
-                    </h2>
-                    <p>
-                      This topic covers essential concepts you&apos;ll need to
-                      understand for your Google SDE interview. We&apos;ll
-                      explore the theory, implementation details, and common
-                      problems.
-                    </p>
-
-                    <h2 className="text-xl font-semibold mt-6 mb-4">
-                      Key Concepts
-                    </h2>
-                    <ul className="space-y-2 mb-6">
-                      <li>
-                        Understanding the core principles and applications
-                      </li>
-                      <li>Analyzing time and space complexity</li>
-                      <li>Implementing efficient solutions</li>
-                      <li>
-                        Recognizing when and how to apply these concepts in
-                        interview questions
-                      </li>
-                    </ul>
-
-                    <h2 className="text-xl font-semibold mt-6 mb-4">
-                      Common Pitfalls
-                    </h2>
-                    <p className="mb-6">
-                      When working on these problems, be careful to avoid these
-                      common mistakes:
-                    </p>
-                    <ul className="space-y-2">
-                      <li>
-                        Overlooking edge cases (empty inputs, single elements,
-                        etc.)
-                      </li>
-                      <li>
-                        Not considering the optimal approach before coding
-                      </li>
-                      <li>
-                        Failing to communicate your thought process during the
-                        interview
-                      </li>
-                    </ul>
-
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mt-8 border border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-medium mb-2">Pro Tip</h3>
-                      <p className="text-gray-700 dark:text-gray-300">
-                        Google interviewers often look for candidates who can
-                        optimize their solutions incrementally. Start with a
-                        working solution, then improve it step by step while
-                        explaining your reasoning.
-                      </p>
-                    </div>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                      components={{
+                        div: ({ node, ...props }) => <div className="markdown-content" {...props} />
+                      }}
+                    >
+                      {topic.content || dummyMarkdown}
+                    </ReactMarkdown>
                   </div>
                 </CardContent>
               </Card>
