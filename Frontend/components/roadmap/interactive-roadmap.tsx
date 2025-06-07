@@ -123,19 +123,19 @@ function WeekCard({
                 Topics:
               </h4>
               <ul className="space-y-3">
-                {item.topics.map((topic) => (
+                {item.topics.map((topic, index) => (
                   <motion.li
                     key={topic.id}
                     className="flex items-start"
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    onClick={() => {}}
                   >
-                    <div className="mt-0.5 flex-shrink-0">
-                      {topic.completed ? (
-                        <CheckCircle className="h-4 w-4 text-primary" />
+                    <div className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-full p-3 shadow-sm">
+                      {index % 2 === 0 ? (
+                        <ArrowRight className="h-6 w-6 text-primary" />
                       ) : (
-                        <Circle className="h-4 w-4 text-muted-foreground" />
+                        <ArrowLeft className="h-6 w-6 text-primary" />
                       )}
                     </div>
                     <div className="ml-2">
@@ -169,35 +169,23 @@ export default function InteractiveRoadmap({
   onToggleComplete,
 }: InteractiveRoadmapProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(1);
-  const [animatingIn, setAnimatingIn] = useState(false);
   const [animatingLines, setAnimatingLines] = useState<{
     [key: number]: boolean;
   }>({});
 
-  // Reset visible count when items change
+  // Initialize all lines to be visible
   useEffect(() => {
-    setVisibleCount(1);
-    setAnimatingLines({});
+    setAnimatingLines(
+      Object.fromEntries(
+        Array(items.length - 1)
+          .keys()
+          .map((i) => [i, true])
+      )
+    );
   }, [items]);
 
   const toggleExpand = (id: string) => {
     setExpandedItem(expandedItem === id ? null : id);
-  };
-
-  const showNextBox = (index: number) => {
-    if (visibleCount <= index + 1 && !animatingIn) {
-      setAnimatingIn(true);
-
-      // First animate the connecting line
-      setAnimatingLines((prev) => ({ ...prev, [index]: true }));
-
-      // Then show the next box after line animation completes
-      setTimeout(() => {
-        setVisibleCount(index + 2);
-        setAnimatingIn(false);
-      }, 600);
-    }
   };
 
   // Animation variants
@@ -207,7 +195,8 @@ export default function InteractiveRoadmap({
       opacity: 1,
       scale: 1,
       transition: {
-        duration: 0.4,
+        duration: 0.8, // Slower box animation
+        ease: "easeOut",
       },
     },
   };
@@ -217,7 +206,7 @@ export default function InteractiveRoadmap({
     visible: {
       pathLength: 1,
       transition: {
-        duration: 0.5,
+        duration: 1.0, // Slower line animation
         ease: "easeInOut",
       },
     },
@@ -250,9 +239,9 @@ export default function InteractiveRoadmap({
               return (
                 <motion.path
                   key={`line-${index}`}
-                  d={`M ${index < visibleCount ? "320" : "0"} ${
-                    120 + index * 200
-                  } H 680 V ${120 + (index + 1) * 200}`}
+                  d={`M 320 ${120 + index * 200} H 680 V ${
+                    120 + (index + 1) * 200
+                  }`}
                   stroke="currentColor"
                   strokeWidth="2"
                   fill="none"
@@ -267,9 +256,9 @@ export default function InteractiveRoadmap({
               return (
                 <motion.path
                   key={`line-${index}`}
-                  d={`M ${index < visibleCount ? "680" : "1000"} ${
-                    120 + index * 200
-                  } H 320 V ${120 + (index + 1) * 200}`}
+                  d={`M 680 ${120 + index * 200} H 320 V ${
+                    120 + (index + 1) * 200
+                  }`}
                   stroke="currentColor"
                   strokeWidth="2"
                   fill="none"
@@ -287,7 +276,6 @@ export default function InteractiveRoadmap({
         {/* Week boxes in zigzag pattern */}
         {items.map((item, index) => {
           const isEven = index % 2 === 0;
-          const isVisible = index < visibleCount;
 
           return (
             <div key={item.id} className="relative">
@@ -298,7 +286,7 @@ export default function InteractiveRoadmap({
                 } w-[300px] z-10`}
                 style={{ top: `${index * 200}px` }}
                 initial="hidden"
-                animate={isVisible ? "visible" : "hidden"}
+                animate="visible"
                 variants={itemVariants}
               >
                 <WeekCard
@@ -309,30 +297,6 @@ export default function InteractiveRoadmap({
                   onToggleExpand={toggleExpand}
                 />
               </motion.div>
-
-              {/* Arrow button to reveal next box */}
-              {index < items.length - 1 &&
-                isVisible &&
-                visibleCount === index + 1 && (
-                  <motion.div
-                    className={`absolute cursor-pointer z-20 ${
-                      isEven ? "right-0 mr-[350px]" : "left-0 ml-[350px]"
-                    }`}
-                    style={{ top: `${index * 200 + 60}px` }}
-                    initial="hidden"
-                    animate="visible"
-                    variants={arrowVariants}
-                    onClick={() => showNextBox(index)}
-                  >
-                    <div className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-full p-3 shadow-sm">
-                      {isEven ? (
-                        <ArrowRight className="h-6 w-6 text-primary" />
-                      ) : (
-                        <ArrowLeft className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                  </motion.div>
-                )}
             </div>
           );
         })}
