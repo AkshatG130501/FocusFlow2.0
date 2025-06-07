@@ -20,7 +20,7 @@ export interface Topic {
   title: string;
   description: string;
   completed: boolean;
-  content: string; // Markdown content
+  content?: string; // Markdown content
 }
 
 export interface Resource {

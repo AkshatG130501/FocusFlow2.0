@@ -119,7 +119,19 @@ export default function StudyContent({
                   <div className="prose dark:prose-invert max-w-none">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                      rehypePlugins={[
+                        rehypeRaw,
+                        [rehypeSanitize, { 
+                          tagNames: ['p', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+                          attributes: {
+                            a: ['href', 'title'],
+                            '*': ['className']
+                          },
+                          protocols: {
+                            a: { href: ['http', 'https', 'mailto'] }
+                          }
+                        }]
+                      ]}
                       components={{
                         div: ({ node, ...props }) => <div className="markdown-content" {...props} />
                       }}
