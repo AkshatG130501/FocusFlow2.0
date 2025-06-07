@@ -46,9 +46,9 @@ export default function StudyLayout({
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col"> {/* Changed min-h-screen to h-screen */}
       {/* Header */}
-      <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center px-4 sticky top-0 z-30">
+      <header className="h-16 border-b flex-shrink-0 pt-3"> {/* Added flex-shrink-0 */}
         <div className="flex items-center w-full justify-between container mx-auto">
           <div className="flex items-center">
             <Button 
@@ -91,7 +91,7 @@ export default function StudyLayout({
         </div>
       </header>
       
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden"> {/* This is the key change */}
         {/* Mobile Sidebar */}
         {mobileSidebarOpen && (
           <div 
@@ -99,51 +99,55 @@ export default function StudyLayout({
             onClick={() => setMobileSidebarOpen(false)}
           >
             <motion.div
-              className="absolute top-0 left-0 bottom-0 w-80 bg-white dark:bg-gray-900 overflow-y-auto"
+              className="absolute top-0 left-0 bottom-0 w-80 bg-white dark:bg-gray-900 overflow-hidden flex flex-col"
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               transition={{ duration: 0.2 }}
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-800">
+              <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
                 <h2 className="font-semibold">Study Topics</h2>
                 <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(false)}>
                   <X className="h-5 w-5" />
                 </Button>
               </div>
               
-              <div className="p-4">
-                <div className="relative mb-4">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search topics..."
-                    className="pl-8"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="p-4 flex-shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search topics..."
+                      className="pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
                 </div>
                 
-                <nav className="space-y-1">
-                  {filteredTopics.map((topic) => (
-                    <SidebarTopicItem 
-                      key={topic.id}
-                      topic={topic}
-                      isActive={topic.id === currentTopicId}
-                      onClick={() => {
-                        onSelectTopic(topic.id);
-                        setMobileSidebarOpen(false);
-                      }}
-                    />
-                  ))}
-                  
-                  {isLoading && (
-                    <div className="animate-pulse space-y-2">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-10 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                      ))}
-                    </div>
-                  )}
-                </nav>
+                <div className="flex-1 overflow-y-auto px-2">
+                  <nav className="space-y-1 pb-4">
+                    {filteredTopics.map((topic) => (
+                      <SidebarTopicItem 
+                        key={topic.id}
+                        topic={topic}
+                        isActive={topic.id === currentTopicId}
+                        onClick={() => {
+                          onSelectTopic(topic.id);
+                          setMobileSidebarOpen(false);
+                        }}
+                      />
+                    ))}
+                    
+                    {isLoading && (
+                      <div className="animate-pulse space-y-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="h-10 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        ))}
+                      </div>
+                    )}
+                  </nav>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -152,7 +156,7 @@ export default function StudyLayout({
         {/* Desktop Sidebar */}
         <motion.div 
           className={cn(
-            "hidden md:block relative border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto transition-shadow",
+            "hidden md:flex relative border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-col",
             sidebarOpen ? "w-80" : "w-16",
             !sidebarOpen && "shadow-lg"
           )}
@@ -176,8 +180,8 @@ export default function StudyLayout({
           </div>
 
           {sidebarOpen ? (
-            <div>
-              <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
                   <Input
@@ -189,27 +193,21 @@ export default function StudyLayout({
                 </div>
               </div>
               
-              <nav className="p-2">
-                {filteredTopics.map((topic) => (
-                  <SidebarTopicItem 
-                    key={topic.id}
-                    topic={topic}
-                    isActive={topic.id === currentTopicId}
-                    onClick={() => onSelectTopic(topic.id)}
-                  />
-                ))}
-                
-                {isLoading && (
-                  <div className="animate-pulse space-y-2 p-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="h-10 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                    ))}
-                  </div>
-                )}
-              </nav>
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <nav className="p-2">
+                  {filteredTopics.map((topic) => (
+                    <SidebarTopicItem 
+                      key={topic.id}
+                      topic={topic}
+                      isActive={topic.id === currentTopicId}
+                      onClick={() => onSelectTopic(topic.id)}
+                    />
+                  ))}
+                </nav>
+              </div>
             </div>
           ) : (
-            <div className="py-4">
+            <div className="py-4 overflow-y-auto">
               {filteredTopics.map((topic, index) => (
                 <motion.button
                   key={topic.id}
@@ -228,7 +226,7 @@ export default function StudyLayout({
                         : "bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500"
                     )}
                   />
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
                     {topic.title}
                   </div>
                 </motion.button>
@@ -238,9 +236,9 @@ export default function StudyLayout({
         </motion.div>
         
         {/* Main content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );
@@ -263,16 +261,16 @@ function SidebarTopicItem({ topic, isActive, onClick }: SidebarTopicItemProps) {
       )}
       onClick={onClick}
     >
-      <div className="mt-0.5 mr-2">
+      <div className="mt-0.5 mr-2 flex-shrink-0">
         {topic.completed ? (
           <CheckCircle className="h-4 w-4 text-green-500" />
         ) : (
           <Circle className="h-4 w-4 text-gray-300 dark:text-gray-600" />
         )}
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         <p className={cn(
-          "text-sm font-medium",
+          "text-sm font-medium truncate",
           topic.completed ? "text-gray-500 dark:text-gray-400" : ""
         )}>
           {topic.title}
