@@ -13,6 +13,7 @@ import {
   Circle,
   Search,
 } from "lucide-react";
+import UserProfile from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
 import { Topic } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
@@ -162,10 +163,19 @@ export default function StudyLayout({
         {/* Added flex-shrink-0 */}
         <div className="flex items-center w-full justify-between container mx-auto">
           <div className="flex items-center">
-            {/* Empty div to maintain spacing */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
           </div>
 
           <div className="flex items-center space-x-4">
+            <UserProfile />
+
             <Button
               variant="outline"
               size="sm"
@@ -448,7 +458,6 @@ export default function StudyLayout({
           {/* Scrollable content area */}
           <div className="flex-1 overflow-y-auto">{children}</div>
         </div>
-        
         {/* AI Chat Sidebar - Desktop */}
         <AnimatePresence>
           {aiChatOpen && (
@@ -474,7 +483,10 @@ export default function StudyLayout({
               {/* Chat Messages - Scrollable */}
               <div
                 className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
-                style={{ overscrollBehavior: "contain", maxHeight: "calc(100vh - 180px)" }}
+                style={{
+                  overscrollBehavior: "contain",
+                  maxHeight: "calc(100vh - 180px)",
+                }}
               >
                 {chatMessages.map((message, index) => (
                   <div
@@ -553,7 +565,7 @@ export default function StudyLayout({
               />
 
               {/* Mobile sidebar */}
-              <motion.div 
+              <motion.div
                 className="md:hidden fixed top-16 bottom-0 right-0 w-[85%] max-w-md bg-white dark:bg-gray-900 shadow-xl z-40 flex flex-col"
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}
@@ -641,7 +653,6 @@ export default function StudyLayout({
             </>
           )}
         </AnimatePresence>
-
       </div>
     </div>
   );
