@@ -121,16 +121,7 @@ export default function StudyContent({
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[
                         rehypeRaw,
-                        [rehypeSanitize, { 
-                          tagNames: ['p', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-                          attributes: {
-                            a: ['href', 'title'],
-                            '*': ['className']
-                          },
-                          protocols: {
-                            a: { href: ['http', 'https', 'mailto'] }
-                          }
-                        }]
+                        [rehypeSanitize]
                       ]}
                       components={{
                         div: ({ node, ...props }) => <div className="markdown-content" {...props} />
