@@ -193,7 +193,7 @@ export default function StudyLayout({
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <nav className="p-2">
                   {filteredTopics.map((topic) => (
                     <SidebarTopicItem 

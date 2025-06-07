@@ -136,7 +136,7 @@ export default function StudyContent({
       </div>
 
       {/* Content section - scrollable */}
-      <div className="flex-1 overflow-y-auto px-4 pb-8">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-8">
         <div className="grid grid-cols-1 gap-8">
           <Tabs
             defaultValue="content"
