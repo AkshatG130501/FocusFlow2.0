@@ -448,99 +448,17 @@ export default function StudyLayout({
           {/* Scrollable content area */}
           <div className="flex-1 overflow-y-auto">{children}</div>
         </div>
+        
         {/* AI Chat Sidebar - Desktop */}
-        {aiChatOpen && (
-          <div className="hidden md:flex border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-20 w-[380px] flex-col h-[calc(100vh-4rem)] fixed right-0 top-16">
-            {/* Chat Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-medium">Ask AI Assistant</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setAiChatOpen(false)}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Chat Messages - Scrollable */}
-            <div
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-              style={{ overscrollBehavior: "contain" }}
+        <AnimatePresence>
+          {aiChatOpen && (
+            <motion.div
+              className="hidden md:flex border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 w-80 flex-col"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 320, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
-              {chatMessages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`${
-                    message.type === "ai"
-                      ? "bg-gray-100 dark:bg-gray-800"
-                      : "bg-blue-100 dark:bg-blue-900 ml-auto"
-                  } rounded-lg p-3 max-w-[85%]`}
-                >
-                  <p className="text-sm">{message.content}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Chat Input - Fixed at bottom */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
-              <form
-                className="relative"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }}
-              >
-                <Input
-                  placeholder="Ask a question..."
-                  className="pr-12"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                />
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                  disabled={!inputMessage.trim()}
-                >
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M22 2L11 13"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M22 2L15 22L11 13L2 9L22 2Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Button>
-              </form>
-            </div>
-          </div>
-        )}
-        {/* AI Chat Sidebar - Mobile */}
-        {aiChatOpen && (
-          <>
-            {/* Mobile overlay */}
-            <div
-              className="md:hidden fixed inset-0 bg-black/50 z-30"
-              onClick={() => setAiChatOpen(false)}
-            />
-
-            {/* Mobile sidebar */}
-            <div className="md:hidden fixed top-16 bottom-0 right-0 w-[85%] max-w-md bg-white dark:bg-gray-900 shadow-xl z-40 flex flex-col h-[calc(100vh-4rem)]">
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
                 <h3 className="font-medium">Ask AI Assistant</h3>
@@ -549,14 +467,14 @@ export default function StudyLayout({
                   size="icon"
                   onClick={() => setAiChatOpen(false)}
                 >
-                  <X className="h-5 w-5" />
+                  <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>
 
               {/* Chat Messages - Scrollable */}
               <div
-                className="flex-1 overflow-y-auto p-4 space-y-4"
-                style={{ overscrollBehavior: "contain" }}
+                className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+                style={{ overscrollBehavior: "contain", maxHeight: "calc(100vh - 180px)" }}
               >
                 {chatMessages.map((message, index) => (
                   <div
@@ -618,9 +536,112 @@ export default function StudyLayout({
                   </Button>
                 </form>
               </div>
-            </div>
-          </>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {/* AI Chat Sidebar - Mobile */}
+        <AnimatePresence>
+          {aiChatOpen && (
+            <>
+              {/* Mobile overlay */}
+              <motion.div
+                className="md:hidden fixed inset-0 bg-black/50 z-30"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setAiChatOpen(false)}
+              />
+
+              {/* Mobile sidebar */}
+              <motion.div 
+                className="md:hidden fixed top-16 bottom-0 right-0 w-[85%] max-w-md bg-white dark:bg-gray-900 shadow-xl z-40 flex flex-col"
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              >
+                {/* Chat Header */}
+                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
+                  <h3 className="font-medium">Ask AI Assistant</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAiChatOpen(false)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {/* Chat Messages - Scrollable */}
+                <div
+                  className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+                  style={{ overscrollBehavior: "contain" }}
+                >
+                  {chatMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`${
+                        message.type === "ai"
+                          ? "bg-gray-100 dark:bg-gray-800"
+                          : "bg-blue-100 dark:bg-blue-900 ml-auto"
+                      } rounded-lg p-3 max-w-[85%]`}
+                    >
+                      <p className="text-sm">{message.content}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Chat Input - Fixed at bottom */}
+                <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
+                  <form
+                    className="relative"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
+                  >
+                    <Input
+                      placeholder="Ask a question..."
+                      className="pr-12"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                    />
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      disabled={!inputMessage.trim()}
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M22 2L11 13"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M22 2L15 22L11 13L2 9L22 2Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </Button>
+                  </form>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
       </div>
     </div>
   );
