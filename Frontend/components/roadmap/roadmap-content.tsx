@@ -4,9 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { RoadmapItem } from "@/lib/types";
 import RoadmapItemCard from "./roadmap-item-card";
-import InteractiveRoadmap from "./interactive-roadmap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, ListTodo, BookOpen, Route } from "lucide-react";
+import { Calendar, ListTodo, BookOpen } from "lucide-react";
 
 interface RoadmapContentProps {
   items: RoadmapItem[];
@@ -17,9 +16,7 @@ export default function RoadmapContent({
   items,
   onToggleComplete,
 }: RoadmapContentProps) {
-  const [viewType, setViewType] = useState<"list" | "interactive">(
-    "interactive"
-  );
+  const [viewType, setViewType] = useState<"list">("list");
 
   const container = {
     hidden: { opacity: 0 },
@@ -46,18 +43,9 @@ export default function RoadmapContent({
         <Tabs
           value={viewType}
           className="w-auto"
-          onValueChange={(value) =>
-            setViewType(value as "list" | "interactive")
-          }
+          onValueChange={(value) => setViewType(value as "list")}
         >
-          <TabsList className="grid w-[200px] grid-cols-2 bg-muted/80">
-            <TabsTrigger
-              value="interactive"
-              className="flex items-center data-[state=active]:bg-background"
-            >
-              <Route className="h-4 w-4 mr-2" />
-              Roadmap
-            </TabsTrigger>
+          <TabsList className="grid w-[200px] grid-cols-1 bg-muted/80">
             <TabsTrigger
               value="list"
               className="flex items-center data-[state=active]:bg-background"
@@ -88,12 +76,7 @@ export default function RoadmapContent({
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="interactive" className="mt-0">
-            <InteractiveRoadmap
-              items={items}
-              onToggleComplete={onToggleComplete}
-            />
-          </TabsContent>
+
         </Tabs>
       </div>
     </div>
