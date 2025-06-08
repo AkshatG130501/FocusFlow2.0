@@ -376,7 +376,7 @@ export default function StudyLayout({
                         </h3>
                         <div className="flex items-center">
                           <span className="text-xs mr-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
-                            {dayTopics.length}
+                            {dayTopics.filter(topic => topic.completed).length}/{dayTopics.length}
                           </span>
                           {expandedDays[day] ? (
                             <ChevronRight className="h-4 w-4 transform rotate-90 text-gray-500 dark:text-gray-400" />

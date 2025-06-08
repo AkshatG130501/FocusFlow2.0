@@ -81,13 +81,13 @@ export default function OnboardingModal({
     <AnimatePresence>
       {isOpen && (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-md md:max-w-xl bg-card border-border/50 shadow-lg">
+          <DialogContent className="max-w-[95%] sm:max-w-md md:max-w-xl bg-card border-border/50 shadow-lg">
             <DialogHeader>
-              <div className="flex items-center space-x-2 mb-2">
-                <div className="bg-primary/10 p-2 rounded-full">
+              <div className="flex items-center space-x-2 mb-1 sm:mb-2">
+                <div className="bg-primary/10 p-1.5 sm:p-2 rounded-full">
                   <Brain className="h-5 w-5 text-primary" />
                 </div>
-                <DialogTitle className="text-2xl font-bold">
+                <DialogTitle className="text-xl sm:text-2xl font-bold">
                   Personalize Your Learning
                 </DialogTitle>
               </div>
@@ -97,9 +97,9 @@ export default function OnboardingModal({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-6 space-y-6">
+            <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
               <div className="space-y-3">
-                <h3 className="text-lg font-medium flex items-center">
+                <h3 className="text-base sm:text-lg font-medium flex items-center">
                   <Upload className="mr-2 h-5 w-5 text-secondary" />
                   Resume Upload (Optional)
                 </h3>
@@ -114,12 +114,12 @@ export default function OnboardingModal({
                 />
               </div>
 
-              <div className="pt-4 border-t border-border/50 flex justify-between items-center">
+              <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
                 <div className="flex items-center text-sm text-foreground/60">
                   <Sparkles className="h-4 w-4 mr-2 text-accent" />
                   <span>AI-powered personalization</span>
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex w-full sm:w-auto space-x-2 sm:space-x-4">
                   <Button
                     variant="outline"
                     onClick={handleClose}
