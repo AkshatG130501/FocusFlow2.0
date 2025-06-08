@@ -33,7 +33,7 @@ export default function LandingPage() {
   const handleGoalSubmit = () => {
     if (goal.trim()) {
       // Increment submit count to force re-render of child components
-      setSubmitCount(prev => prev + 1);
+      setSubmitCount((prev) => prev + 1);
       setIsModalOpen(true);
     }
   };
@@ -41,10 +41,10 @@ export default function LandingPage() {
   const handleModalClose = () => {
     // First set modal to closed
     setIsModalOpen(false);
-    
+
     // Reset the submit count to ensure the button can be clicked again
     setSubmitCount(0);
-    
+
     // Wait a bit before resetting the goal to avoid UI flicker
     setTimeout(() => {
       setGoal("");
@@ -101,9 +101,6 @@ export default function LandingPage() {
 
             <div className="flex items-center space-x-3">
               <ModeToggle />
-              <Button className="bg-primary hover:bg-primary/90 transition-colors flex items-center gap-2">
-                Sign In with Google
-              </Button>
             </div>
           </div>
 
@@ -122,7 +119,9 @@ export default function LandingPage() {
                       FocusFlow
                     </span>
                   </div>
-                  <ModeToggle />
+                  <div className="mr-8">
+                    <ModeToggle />
+                  </div>
                 </div>
 
                 <nav className="flex flex-col space-y-4 text-lg font-medium mb-8">
@@ -139,10 +138,6 @@ export default function LandingPage() {
                     How It Works
                   </a>
                 </nav>
-
-                <Button className="bg-primary hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 w-full mt-auto">
-                  Sign In with Google
-                </Button>
               </div>
             </SheetContent>
           </Sheet>
@@ -333,10 +328,10 @@ export default function LandingPage() {
       </footer>
 
       {isModalOpen && (
-        <OnboardingModal 
-          key={`modal-${submitCount}`} 
-          goal={goal} 
-          onClose={handleModalClose} 
+        <OnboardingModal
+          key={`modal-${submitCount}`}
+          goal={goal}
+          onClose={handleModalClose}
         />
       )}
     </div>
