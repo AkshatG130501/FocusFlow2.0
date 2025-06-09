@@ -1,11 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { RoadmapItem } from "@/lib/types";
 import RoadmapItemCard from "./roadmap-item-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, ListTodo, BookOpen } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import {
+  Calendar,
+  ListTodo,
+  BookOpen,
+  Search,
+  Filter,
+  CheckCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface RoadmapContentProps {
   items: RoadmapItem[];
@@ -17,6 +34,32 @@ export default function RoadmapContent({
   onToggleComplete,
 }: RoadmapContentProps) {
   const [viewType, setViewType] = useState<"list">("list");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("all"); // all, completed, pending
+
+  // Calculate overall progress
+  const totalTopics = items.reduce((acc, item) => acc + item.topics.length, 0);
+  const completedTopics = items.reduce(
+    (acc, item) => acc + item.topics.filter((topic) => topic.completed).length,
+    0
+  );
+  const overallProgress = Math.round((completedTopics / totalTopics) * 100);
+
+  // Filter and search items
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter =
+        filter === "all"
+          ? true
+          : filter === "completed"
+          ? item.completed
+          : !item.completed;
+      return matchesSearch && matchesFilter;
+    });
+  }, [items, searchQuery, filter]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -29,32 +72,31 @@ export default function RoadmapContent({
   };
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center">
-          <div className="bg-secondary/10 p-1.5 rounded-full mr-2">
-            <BookOpen className="h-5 w-5 text-secondary" />
-          </div>
-          <h2 className="text-xl font-semibold text-foreground">
-            Your Study Plan
-          </h2>
-        </div>
+    <div className="space-y-6">
 
-        <Tabs
-          value={viewType}
-          className="w-auto"
-          onValueChange={(value) => setViewType(value as "list")}
-        >
-          <TabsList className="grid w-[200px] grid-cols-1 bg-muted/80">
-            <TabsTrigger
-              value="list"
-              className="flex items-center data-[state=active]:bg-background"
-            >
-              <ListTodo className="h-4 w-4 mr-2" />
-              List
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search topics..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[180px]">
+            <div className="flex items-center">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by status" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Topics</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-6">
@@ -66,17 +108,21 @@ export default function RoadmapContent({
               initial="hidden"
               animate="show"
             >
-              {items.map((item) => (
-                <RoadmapItemCard
-                  key={item.id}
-                  item={item}
-                  onToggleComplete={onToggleComplete}
-                />
-              ))}
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item) => (
+                  <RoadmapItemCard
+                    key={item.id}
+                    item={item}
+                    onToggleComplete={onToggleComplete}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No topics found matching your criteria
+                </div>
+              )}
             </motion.div>
           </TabsContent>
-
-
         </Tabs>
       </div>
     </div>
