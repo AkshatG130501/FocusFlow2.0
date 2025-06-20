@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { LogIn, ChevronRight, Sparkles, Brain } from "lucide-react";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/user-context";
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -23,8 +24,12 @@ interface SignInModalProps {
 export default function SignInModal({
   isOpen,
   onClose,
-  userGoal = "Improve your learning experience",
+  userGoal: propUserGoal,
 }: SignInModalProps) {
+  const { userGoal: contextUserGoal } = useUser();
+  
+  // Use the prop if provided, otherwise fall back to context, then to default
+  const userGoal = propUserGoal || contextUserGoal || "Improve your learning experience";
   const [isSigningIn, setIsSigningIn] = useState(false);
   const { toast } = useToast();
 

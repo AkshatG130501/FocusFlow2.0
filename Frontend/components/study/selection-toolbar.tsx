@@ -1,5 +1,5 @@
 import { Wand2, FlaskConical, BrainCircuit } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SelectionToolbarProps {
   position: { x: number; y: number } | null;
@@ -14,19 +14,19 @@ export default function SelectionToolbar({
   onAskAI,
   onGenerateQuiz
 }: SelectionToolbarProps) {
-  if (!position) return null;
-
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed z-50 bg-popover/95 backdrop-blur-sm shadow-lg rounded-full border border-border p-1.5 flex gap-1.5 transform -translate-x-1/2"
-      style={{
-        left: `${position.x}px`,
-        top: `${Math.max(position.y - 48, 10)}px`
-      }}
-    >
+    <AnimatePresence>
+      {position && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="fixed z-50 bg-popover/95 backdrop-blur-sm shadow-lg rounded-full border border-border p-1.5 flex gap-1.5 transform -translate-x-1/2"
+          style={{
+            left: `${position.x}px`,
+            top: `${Math.max(position.y - 48, 10)}px`
+          }}
+        >
       <button
         onClick={() => onSimplify(window.getSelection()?.toString() || "")}
         className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
@@ -50,6 +50,8 @@ export default function SelectionToolbar({
       >
         <FlaskConical className="h-4 w-4" />
       </button>
-    </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

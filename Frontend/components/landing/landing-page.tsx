@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   BrainCircuit,
@@ -9,8 +9,8 @@ import {
   BookOpen,
   Target,
   Menu,
-  X,
 } from "lucide-react";
+import { useUser } from "@/contexts/user-context";
 import GoalInput from "./goal-input";
 import OnboardingModal from "../onboarding/onboarding-modal";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export default function LandingPage() {
   const [goal, setGoal] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitCount, setSubmitCount] = useState(0);
+  const { parseGoalInput } = useUser();
 
   // Reset state when component mounts (after navigation)
   useEffect(() => {
@@ -32,6 +33,9 @@ export default function LandingPage() {
 
   const handleGoalSubmit = () => {
     if (goal.trim()) {
+      // Parse and save the goal to context (which will save to localStorage)
+      parseGoalInput(goal);
+      
       // Increment submit count to force re-render of child components
       setSubmitCount((prev) => prev + 1);
       setIsModalOpen(true);
