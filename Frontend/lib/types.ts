@@ -23,21 +23,18 @@ export interface Topic {
   content?: string; // Markdown content
 }
 
-export interface Resource {
-  id: string;
-  title: string;
-  type: 'video' | 'article' | 'practice' | 'other';
-  url: string;
-}
-
-export interface Question {
-  id: string;
-  text: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  answer?: string;
-}
-
 export type GoalSubmission = {
   goal: string;
   resume?: File;
 };
+
+export interface ResumeData {
+  text: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+}
+
+export interface ParsedResumeData {
+  rawText: string;
+}

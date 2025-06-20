@@ -1,16 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Upload,
-  FileText,
-  ChevronRight,
-  Sparkles,
-  Brain,
-} from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { Upload, ChevronRight, Sparkles, Brain } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/user-context";
 import ResumeUpload from "./resume-upload";
 import { GoalSubmission } from "@/lib/types";
+import { generateRoadmap } from "@/lib/api-client";
 
 interface OnboardingModalProps {
   goal: string;
@@ -37,6 +32,7 @@ export default function OnboardingModal({
   const [isUploading, setIsUploading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { parsedResumeData, setUserGoal } = useUser();
 
   const handleClose = () => {
     setIsOpen(false);
@@ -45,24 +41,57 @@ export default function OnboardingModal({
 
   const handleSubmit = async () => {
     setIsUploading(true);
-
-    // Simulate API call to process goal and resume
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Save the goal to user context
+      setUserGoal(goal);
+      
+      // Extract timeline from goal (default to 30 days if not specified)
+      // This is a simple regex to find patterns like "30 days" or "4 weeks"
+      const timelineMatch = goal.match(/\b(\d+)\s*(day|days|week|weeks|month|months)\b/i);
+      let timelineInDays = 30; // Default
+      
+      if (timelineMatch) {
+        const value = parseInt(timelineMatch[1]);
+        const unit = timelineMatch[2].toLowerCase();
+        
+        // Convert to days
+        if (unit.includes('week')) {
+          timelineInDays = value * 7;
+        } else if (unit.includes('month')) {
+          timelineInDays = value * 30;
+        } else {
+          timelineInDays = value;
+        }
+      }
 
-      const submission: GoalSubmission = {
-        goal,
-        resume: resumeFile || undefined,
-      };
-
-      console.log("Submission:", submission);
-
+      // Show loading toast
       toast({
-        title: "Success!",
-        description: "Your personalized roadmap is ready.",
-        duration: 5000,
+        title: "Generating your roadmap",
+        description: "Our AI is creating your personalized learning path...",
+        duration: 10000,
       });
 
+      // Call the Gemini API to generate a roadmap
+      const roadmapItems = await generateRoadmap(
+        goal,
+        parsedResumeData?.rawText,
+        timelineInDays
+      );
+      
+      // Store the roadmap in localStorage for the roadmap page to use
+      localStorage.setItem('roadmapItems', JSON.stringify(roadmapItems));
+
+      // Log submission data for debugging
+      console.log("Generated Roadmap:", roadmapItems);
+      
+      toast({
+        title: "Success!",
+        description: parsedResumeData 
+          ? "Your personalized roadmap is ready based on your resume and goal." 
+          : "Your personalized roadmap is ready.",
+        duration: 5000,
+      });
+      
       // Navigate to roadmap page
       router.push("/roadmap");
     } catch (error) {

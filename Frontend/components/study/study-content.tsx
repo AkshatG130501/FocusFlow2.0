@@ -9,7 +9,7 @@ import {
   Circle,
   FileText,
 } from "lucide-react";
-import { Topic, Resource, Question } from "@/lib/types";
+import { Topic } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,8 +19,41 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
-import { dummyMarkdown } from "@/lib/dummy-content";
+// Content is now generated dynamically based on topic information
 import SelectionToolbar from "./selection-toolbar";
+
+/**
+ * Generates default markdown content for a topic when no content is provided
+ */
+function generateDefaultContent(topic: Topic): string {
+  return `
+# ${topic.title}
+
+## Overview
+
+${topic.description}
+
+## Key Concepts
+
+- Understanding core principles of ${topic.title.toLowerCase()}
+- Applying ${topic.title.toLowerCase()} techniques to solve problems
+- Best practices for implementing ${topic.title.toLowerCase()}
+
+## Learning Resources
+
+### Recommended Reading
+- Books and articles related to ${topic.title.toLowerCase()}
+- Official documentation and tutorials
+- Practice problems and exercises
+
+### Practice Exercises
+Try solving problems related to ${topic.title.toLowerCase()} to reinforce your understanding.
+
+## Next Steps
+
+After mastering this topic, you'll be ready to move on to more advanced concepts.
+`;
+}
 
 interface StudyContentProps {
   topic: Topic | null;
@@ -180,7 +213,7 @@ export default function StudyContent({
                           div: ({ node, ...props }) => <div className="markdown-content" {...props} />
                         }}
                       >
-                        {topic.content || dummyMarkdown}
+                        {topic.content || generateDefaultContent(topic)}
                       </ReactMarkdown>
                     </div>
                   </CardContent>

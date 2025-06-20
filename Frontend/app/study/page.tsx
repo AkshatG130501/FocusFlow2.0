@@ -1,29 +1,40 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import StudyLayout from "@/components/study/study-layout";
 import StudyContent from "@/components/study/study-content";
-import { Topic } from "@/lib/types";
-import { mockRoadmapData } from "@/lib/mock-data";
+import { Topic, RoadmapItem } from "@/lib/types";
 
 export default function StudyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [allTopics, setAllTopics] = useState<Topic[]>([]);
   const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
+  const router = useRouter();
 
   // Flatten all topics from roadmap items
   useEffect(() => {
     const loadTopics = async () => {
       try {
-        // In a real app, this would be an API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Add a small delay to show loading state
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        const topics = mockRoadmapData.flatMap(item => item.topics);
-        setAllTopics(topics);
+        // Get roadmap items from localStorage
+        const storedRoadmap = localStorage.getItem('roadmapItems');
         
-        // Set the first topic as current
-        if (topics.length > 0) {
-          setCurrentTopic(topics[0]);
+        if (storedRoadmap) {
+          const roadmapItems = JSON.parse(storedRoadmap) as RoadmapItem[];
+          const topics = roadmapItems.flatMap(item => item.topics);
+          setAllTopics(topics);
+          
+          // Set the first topic as current
+          if (topics.length > 0) {
+            setCurrentTopic(topics[0]);
+          }
+        } else {
+          // If no roadmap is found, redirect to the home page
+          console.error("No roadmap found in localStorage");
+          router.push('/');
         }
       } catch (error) {
         console.error("Failed to load study content:", error);
@@ -33,7 +44,7 @@ export default function StudyPage() {
     };
     
     loadTopics();
-  }, []);
+  }, [router]);
 
   const handleSelectTopic = (topicId: string) => {
     const topic = allTopics.find(t => t.id === topicId) || null;
@@ -41,13 +52,45 @@ export default function StudyPage() {
   };
 
   const handleMarkComplete = (topicId: string) => {
-    setAllTopics(topics => 
-      topics.map(topic => 
+    setAllTopics(topics => {
+      // Update the topic completion status
+      const updatedTopics = topics.map(topic => 
         topic.id === topicId 
           ? { ...topic, completed: !topic.completed }
           : topic
-      )
-    );
+      );
+      
+      // Update the roadmap items in localStorage
+      const storedRoadmap = localStorage.getItem('roadmapItems');
+      
+      if (storedRoadmap) {
+        const roadmapItems = JSON.parse(storedRoadmap) as RoadmapItem[];
+        
+        // Find and update the topic in the roadmap items
+        const updatedRoadmapItems = roadmapItems.map(item => {
+          const updatedItemTopics = item.topics.map(topic => {
+            if (topic.id === topicId) {
+              return { ...topic, completed: !topic.completed };
+            }
+            return topic;
+          });
+          
+          // Calculate if all topics are completed to mark the section as completed
+          const allTopicsCompleted = updatedItemTopics.every(topic => topic.completed);
+          
+          return {
+            ...item,
+            topics: updatedItemTopics,
+            completed: allTopicsCompleted,
+          };
+        });
+        
+        // Save the updated roadmap to localStorage
+        localStorage.setItem('roadmapItems', JSON.stringify(updatedRoadmapItems));
+      }
+      
+      return updatedTopics;
+    });
     
     if (currentTopic?.id === topicId) {
       setCurrentTopic(prev => prev ? { ...prev, completed: !prev.completed } : null);
