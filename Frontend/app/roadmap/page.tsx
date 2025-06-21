@@ -7,11 +7,12 @@ import RoadmapContent from "@/components/roadmap/roadmap-content";
 import RoadmapSkeleton from "@/components/roadmap/roadmap-skeleton";
 import SignInModal from "@/components/auth/signin-modal";
 import { useAuth } from "@/hooks/use-auth";
-import { RoadmapItem } from "@/lib/types";
+import { RoadmapItem, RoadmapResponse } from "@/lib/types";
 
 export default function RoadmapPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
+  const [roadmapResponse, setRoadmapResponse] =
+    useState<RoadmapResponse | null>(null);
   const [showSignInModal, setShowSignInModal] = useState(false);
   const router = useRouter();
   const auth = useAuth();
@@ -22,17 +23,17 @@ export default function RoadmapPage() {
       try {
         // Add a small delay to show the loading state
         await new Promise((resolve) => setTimeout(resolve, 500));
-        
+
         // Get roadmap items from localStorage
-        const storedRoadmap = localStorage.getItem('roadmapItems');
-        
+        const storedRoadmap = localStorage.getItem("roadmapItems");
+
         if (storedRoadmap) {
-          const parsedRoadmap = JSON.parse(storedRoadmap) as RoadmapItem[];
-          setRoadmapItems(parsedRoadmap);
+          const parsedRoadmap = JSON.parse(storedRoadmap) as RoadmapResponse;
+          setRoadmapResponse(parsedRoadmap);
         } else {
           // If no roadmap is found, redirect to the home page
           console.error("No roadmap found in localStorage");
-          router.push('/');
+          router.push("/");
         }
       } catch (error) {
         console.error("Failed to load roadmap:", error);
@@ -59,49 +60,59 @@ export default function RoadmapPage() {
   };
 
   const handleToggleComplete = (topicId: string) => {
-    setRoadmapItems((items) => {
-      // Find the roadmap item that contains the topic
-      const updatedItems = items.map((item) => {
-        // Check if this item contains the topic
-        const updatedTopics = item.topics.map((topic) => {
-          if (topic.id === topicId) {
-            return { ...topic, completed: !topic.completed };
-          }
-          return topic;
-        });
-        
-        // Calculate if all topics are completed to mark the section as completed
-        const allTopicsCompleted = updatedTopics.every((topic) => topic.completed);
-        
-        return {
-          ...item,
-          topics: updatedTopics,
-          completed: allTopicsCompleted,
-        };
-      });
-      
+    if (!roadmapResponse) return;
+
+    setRoadmapResponse((prev) => {
+      if (!prev) return null;
+
+      const updatedRoadmap = {
+        ...prev,
+        roadmap: prev.roadmap.map((item) => {
+          const updatedTopics = item.topics.map((topic) => {
+            if (topic.id === topicId) {
+              return { ...topic, completed: !topic.completed };
+            }
+            return topic;
+          });
+
+          const allTopicsCompleted = updatedTopics.every(
+            (topic) => topic.completed
+          );
+
+          return {
+            ...item,
+            topics: updatedTopics,
+            completed: allTopicsCompleted,
+          };
+        }),
+      };
+
       // Save the updated roadmap to localStorage
-      localStorage.setItem('roadmapItems', JSON.stringify(updatedItems));
-      
-      return updatedItems;
+      localStorage.setItem("roadmapItems", JSON.stringify(updatedRoadmap));
+
+      return updatedRoadmap;
     });
   };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <RoadmapHeader onStartLearning={handleStartLearning} />
+        <RoadmapHeader
+          onStartLearning={handleStartLearning}
+          title={roadmapResponse?.title}
+          timeline={roadmapResponse?.timeline}
+          prepType={roadmapResponse?.prepType}
+        />
 
         {isLoading ? (
           <RoadmapSkeleton />
         ) : (
           <RoadmapContent
-            items={roadmapItems}
+            items={roadmapResponse?.roadmap || []}
             onToggleComplete={handleToggleComplete}
           />
         )}
 
-        {/* Sign-in Modal */}
         <SignInModal
           isOpen={showSignInModal}
           onClose={handleCloseSignInModal}
