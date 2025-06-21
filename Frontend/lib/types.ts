@@ -15,6 +15,14 @@ export interface RoadmapItem {
   topics: Topic[];
 }
 
+
+export interface RoadmapResponse {
+  title: string;
+  timeline: string;
+  prepType: string;
+  roadmap: RoadmapItem[];
+}
+
 export interface Topic {
   id: string;
   title: string;
