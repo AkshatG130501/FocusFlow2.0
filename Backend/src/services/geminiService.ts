@@ -40,6 +40,13 @@ interface Topic {
   content?: string; // Markdown content
 }
 
+interface RoadmapResponse {
+  title: string;
+  timeline: string;
+  prepType: string;
+  roadmap: RoadmapItem[];
+}
+
 /**
  * Generate a personalized learning roadmap based on user goal and resume data
  * @param goal The user's learning goal
@@ -51,7 +58,7 @@ export async function generateRoadmap(
   goal: string,
   resumeText: string | null,
   timelineInDays: number
-): Promise<RoadmapItem[]> {
+): Promise<RoadmapResponse> {
   try {
     if (!API_KEY) {
       throw new Error("GEMINI_API_KEY is not set in environment variables");
@@ -69,45 +76,45 @@ export async function generateRoadmap(
         : "The user has not provided a resume."
     }
     
-    Create a detailed day-by-day learning roadmap for exactly ${timelineInDays} days. The roadmap should be structured as follows:
+    Create a detailed day-by-day learning roadmap for exactly ${timelineInDays} days. First, determine:
+    1. A concise title for this learning journey
+    2. The preparation type (e.g., "Technical Interview Preparation", "Full-Stack Development Learning", etc.)
+    
+    Then create the daily roadmap structured as follows:
     1. Create exactly ${timelineInDays} sections, one for each day (Day 1, Day 2, etc.)
     2. Each day should have a title, description, and duration of 1 day
     3. Each day should contain specific topics to learn on that day
     4. Each topic should have a title, description, and optional detailed content in markdown format
-    
-    Respond with a JSON array of roadmap items in this exact format:
-    [
-      {
-        "id": "day-1",
-        "title": "Day 1: [Focus Area]",
-        "description": "Detailed description of what will be covered on Day 1",
-        "completed": false,
-        "duration": "1 day",
-        "topics": [
-          {
-            "id": "topic-1-1",
-            "title": "Topic Title",
-            "description": "Topic description",
-            "completed": false,
-            "content": "Optional markdown content with detailed information"
-          }
-        ]
-      },
-      {
-        "id": "day-2",
-        "title": "Day 2: [Focus Area]",
-        "description": "Detailed description of what will be covered on Day 2",
-        "completed": false,
-        "duration": "1 day",
-        "topics": [...]
-      },
-      ...
-    ]
+
+    Respond with a JSON object in this exact format:
+    {
+      "title": "Concise title of the learning journey",
+      "timeline": "${timelineInDays} days",
+      "prepType": "Type of preparation/study",
+      "roadmap": [
+        {
+          "id": "day-1",
+          "title": "Day 1: [Focus Area]",
+          "description": "Detailed description of what will be covered on Day 1",
+          "completed": false,
+          "duration": "1 day",
+          "topics": [
+            {
+              "id": "topic-1-1",
+              "title": "Topic Title",
+              "description": "Topic description",
+              "completed": false,
+              "content": "Optional markdown content with detailed information"
+            }
+          ]
+        }
+      ]
+    }
     
     Make sure the roadmap is tailored to the user's goal and background (if resume is provided).
     You MUST create exactly ${timelineInDays} days, with a logical progression of topics.
     Each day should have 2-4 specific topics to learn.
-    Only respond with the JSON array, no additional text.
+    Only respond with the JSON object, no additional text.
     `;
 
     // Generate content using Gemini with simplified approach
@@ -121,7 +128,7 @@ export async function generateRoadmap(
       // Parse the JSON response
       try {
         // Extract JSON from the response (in case there's any additional text)
-        const jsonMatch = text.match(/\[\s*\{.*\}\s*\]/s);
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           console.error(
             "Could not extract JSON from response. Raw response:",
@@ -133,8 +140,8 @@ export async function generateRoadmap(
         const jsonText = jsonMatch[0];
         console.log("Extracted JSON, length:", jsonText.length);
 
-        const roadmapItems = JSON.parse(jsonText) as RoadmapItem[];
-        return roadmapItems;
+        const roadmapResponse = JSON.parse(jsonText) as RoadmapResponse;
+        return roadmapResponse;
       } catch (parseError) {
         console.error("Error parsing Gemini response:", parseError);
         throw new Error("Failed to parse roadmap data from Gemini");
