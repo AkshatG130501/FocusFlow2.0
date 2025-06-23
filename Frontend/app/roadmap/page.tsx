@@ -70,13 +70,13 @@ export default function RoadmapPage() {
         roadmap: prev.roadmap.map((item) => {
           const updatedTopics = item.topics.map((topic) => {
             if (topic.id === topicId) {
-              return { ...topic, completed: !topic.completed };
+              return { ...topic, isCompleted: !topic.isCompleted };
             }
             return topic;
           });
 
           const allTopicsCompleted = updatedTopics.every(
-            (topic) => topic.completed
+            (topic) => topic.isCompleted
           );
 
           return {

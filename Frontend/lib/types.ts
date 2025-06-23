@@ -15,7 +15,6 @@ export interface RoadmapItem {
   topics: Topic[];
 }
 
-
 export interface RoadmapResponse {
   title: string;
   timeline: string;
@@ -25,10 +24,29 @@ export interface RoadmapResponse {
 
 export interface Topic {
   id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  content?: string; // Markdown content
+  name: string;
+  content: string;
+  isCompleted: boolean;
+  dayNumber: number;
+  daySummary: string;
+}
+
+export interface Day {
+  id: string;
+  dayNumber: number;
+  isCompleted: boolean;
+  summary: string;
+  topics: Topic[];
+}
+
+export interface Roadmap {
+  id: string;
+  goal: string;
+  duration: number;
+  prepType: string;
+  progress: number;
+  isCompleted: boolean;
+  days: Day[];
 }
 
 export type GoalSubmission = {

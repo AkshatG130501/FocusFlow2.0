@@ -8,12 +8,10 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    // Handle the OAuth callback
     const handleAuthCallback = async () => {
       try {
-        // Get the session from the URL
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error("Error during auth callback:", error);
           router.push("/");
@@ -21,10 +19,51 @@ export default function AuthCallback() {
         }
 
         if (data?.session) {
-          // Authentication successful, redirect to study page
-          router.push("/study");
+          // Collect relevant data from localStorage
+          const userDataToSync = {
+            roadmapItems: localStorage.getItem("roadmapItems"),
+            userGoal: localStorage.getItem("userGoal"),
+            timeline: localStorage.getItem("timeline"),
+            resumeData: localStorage.getItem("resumeTextPreview"),
+          };
+
+          try {
+            // Send data to backend
+            const response = await fetch(
+              "http://localhost:5000/api/roadmap/save",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${data.session.access_token}`,
+                },
+                body: JSON.stringify({
+                  userId: data.session.user.id,
+                  roadmapItems: userDataToSync.roadmapItems, // Changed this line
+                  userData: {
+                    // Added structured userData
+                    userGoal: userDataToSync.userGoal,
+                    timeline: userDataToSync.timeline,
+                    resumeData: userDataToSync.resumeData,
+                  },
+                }),
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to sync user data");
+            }
+
+            const { journeyId } = await response.json();
+            localStorage.setItem("journeyId", journeyId);
+            // After successful sync, redirect to study page
+            router.push("/study");
+          } catch (syncError) {
+            console.error("Error syncing user data:", syncError);
+            // Still redirect to study page even if sync fails
+            router.push("/study");
+          }
         } else {
-          // No session found, redirect to home
           router.push("/");
         }
       } catch (error) {
@@ -40,7 +79,9 @@ export default function AuthCallback() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-lg text-foreground/80">Signing you in...</p>
+        <p className="mt-4 text-lg text-foreground/80">
+          Setting up your account...
+        </p>
       </div>
     </div>
   );
