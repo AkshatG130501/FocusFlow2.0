@@ -213,4 +213,93 @@ router.get("/:journeyId", async (req, res) => {
   }
 });
 
+/**
+ * PATCH /roadmap/:journeyId/topic/:topicId
+ * Update topic completion status
+ */
+router.patch("/:journeyId/topic/:topicId", async (req, res) => {
+  try {
+    const { journeyId, topicId } = req.params;
+    const { isCompleted } = req.body;
+
+    if (typeof isCompleted !== "boolean") {
+      return res.status(400).json({ error: "isCompleted must be a boolean" });
+    }
+
+    // 1. Update topic completion status
+    const { error: topicError } = await supabase
+      .from("topics")
+      .update({ is_completed: isCompleted })
+      .eq("id", topicId);
+
+    if (topicError) throw topicError;
+
+    // 2. Check if all topics in the journey are completed
+    const { data: dayIds } = await supabase
+      .from("days")
+      .select("id")
+      .eq("journey_id", journeyId);
+
+    const { data: journeyTopics, error: checkError } = await supabase
+      .from("topics")
+      .select("is_completed")
+      .in("day_id", dayIds?.map(day => day.id) || []);
+
+    if (checkError) throw checkError;
+
+    const allTopicsCompleted =
+      journeyTopics?.every((t) => t.is_completed) ?? false;
+
+    // 3. Update journey completion status if all topics are completed
+    if (allTopicsCompleted) {
+      const { error: journeyError } = await supabase
+        .from("journeys")
+        .update({ is_completed: true })
+        .eq("id", journeyId);
+
+      if (journeyError) throw journeyError;
+    }
+
+    // 4. Update journey progress
+    const { data: progressData, error: progressError } = await supabase
+      .from("journey_progress")
+      .select("last_visited_day")
+      .eq("journey_id", journeyId)
+      .single();
+
+    if (progressError) throw progressError;
+
+    // Calculate progress based on completed topics
+    const completedTopicsCount =
+      journeyTopics?.filter((t) => t.is_completed).length ?? 0;
+    const totalTopicsCount = journeyTopics?.length ?? 0;
+    const progress = Math.round(
+      (completedTopicsCount / totalTopicsCount) * 100
+    );
+
+    const { error: updateProgressError } = await supabase
+      .from("journey_progress")
+      .update({
+        progress_percentage: progress,
+        last_updated: new Date().toISOString(),
+      })
+      .eq("journey_id", journeyId);
+
+    if (updateProgressError) throw updateProgressError;
+
+    res.json({
+      success: true,
+      isCompleted,
+      progress,
+      allTopicsCompleted,
+    });
+  } catch (error: any) {
+    console.error("Error updating topic status:", error);
+    res.status(500).json({
+      error: "Failed to update topic status",
+      details: error.message,
+    });
+  }
+});
+
 export default router;
