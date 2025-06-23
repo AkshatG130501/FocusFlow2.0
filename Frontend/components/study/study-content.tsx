@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Circle,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Topic } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -27,27 +28,25 @@ import SelectionToolbar from "./selection-toolbar";
  */
 function generateDefaultContent(topic: Topic): string {
   return `
-# ${topic.title}
+# ${topic.name}
 
 ## Overview
 
-${topic.description}
-
 ## Key Concepts
 
-- Understanding core principles of ${topic.title.toLowerCase()}
-- Applying ${topic.title.toLowerCase()} techniques to solve problems
-- Best practices for implementing ${topic.title.toLowerCase()}
+- Understanding core principles of ${topic.name.toLowerCase()}
+- Applying ${topic.name.toLowerCase()} techniques to solve problems
+- Best practices for implementing ${topic.name.toLowerCase()}
 
 ## Learning Resources
 
 ### Recommended Reading
-- Books and articles related to ${topic.title.toLowerCase()}
+- Books and articles related to ${topic.name.toLowerCase()}
 - Official documentation and tutorials
 - Practice problems and exercises
 
 ### Practice Exercises
-Try solving problems related to ${topic.title.toLowerCase()} to reinforce your understanding.
+Try solving problems related to ${topic.name.toLowerCase()} to reinforce your understanding.
 
 ## Next Steps
 
@@ -63,6 +62,7 @@ interface StudyContentProps {
   onNavigatePrev: () => void;
   hasPrev: boolean;
   hasNext: boolean;
+  updateLoading: string | null;
 }
 
 export default function StudyContent({
@@ -73,6 +73,7 @@ export default function StudyContent({
   onNavigatePrev,
   hasPrev,
   hasNext,
+  updateLoading,
 }: StudyContentProps) {
   const [activeTab, setActiveTab] = useState("content");
   const [selectedText, setSelectedText] = useState("");
@@ -141,19 +142,22 @@ export default function StudyContent({
             animate={{ opacity: 1, y: 0 }}
             key={topic.id}
           >
-            {topic.title}
+            {topic.name}
           </motion.h1>
 
           <Button
-            variant={topic.completed ? "outline" : "default"}
+            variant={topic.isCompleted ? "outline" : "default"}
             className={cn(
               "gap-2",
-              !topic.completed &&
+              !topic.isCompleted &&
                 "bg-gradient-to-r from-[#51d0de] to-[#bf4aa8] hover:opacity-90"
             )}
             onClick={() => onMarkComplete(topic.id)}
+            disabled={updateLoading === topic.id}
           >
-            {topic.completed ? (
+            {updateLoading === topic.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : topic.isCompleted ? (
               <>
                 <CheckCircle className="h-4 w-4" />
                 Completed

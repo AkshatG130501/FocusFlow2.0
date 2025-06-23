@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import UserProfile from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
-import { Topic } from "@/lib/types";
+import { Day, Topic } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 interface StudyLayoutProps {
   children: React.ReactNode;
   topics: Topic[];
+  days: Day[]; // Add this line
   currentTopicId?: string;
   isLoading: boolean;
   onSelectTopic: (topicId: string) => void;
@@ -31,6 +32,7 @@ interface StudyLayoutProps {
 export default function StudyLayout({
   children,
   topics,
+  days,
   currentTopicId,
   isLoading,
   onSelectTopic,
@@ -87,10 +89,8 @@ export default function StudyLayout({
   };
 
   // Filter topics based on search query
-  const filteredTopics = topics.filter(
-    (topic) =>
-      topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      topic.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTopics = topics.filter((topic) =>
+    topic.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Group the filtered topics by day
@@ -149,9 +149,45 @@ export default function StudyLayout({
     }, 1000);
   };
 
-  const completedTopics = topics.filter((topic) => topic.completed).length;
+  const completedTopics = topics.filter((topic) => topic.isCompleted).length;
   const progress =
     topics.length > 0 ? (completedTopics / topics.length) * 100 : 0;
+
+  // Update the processTopics function to handle the new data structure:
+  const processTopics = (days: Day[]) => {
+    const groupedByDay = days.reduce((acc: { [key: string]: Topic[] }, day) => {
+      const dayKey = `Day ${day.dayNumber}`;
+      acc[dayKey] = day.topics.map((topic) => ({
+        id: topic.id,
+        name: topic.name,
+        content: topic.content || "No description available",
+        isCompleted: topic.isCompleted,
+        dayNumber: day.dayNumber,
+        daySummary: day.summary,
+      }));
+      return acc;
+    }, {});
+
+    return groupedByDay;
+  };
+
+  // Update the filteredAndGroupedTopics function
+  const filteredAndGroupedTopics = () => {
+    if (!topics || topics.length === 0) return {};
+
+    // If there's a search query, filter across all topics
+    if (searchQuery) {
+      const filtered = topics.filter(
+        (topic) =>
+          topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          topic.content?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      return { "Search Results": filtered };
+    }
+
+    // Otherwise, group by days
+    return processTopics(days);
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -362,63 +398,65 @@ export default function StudyLayout({
                 }}
               >
                 <nav className="p-2 space-y-2">
-                  {Object.entries(groupedTopics).map(([day, dayTopics]) => (
-                    <div
-                      key={day}
-                      className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-shadow"
-                    >
-                      <button
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-750 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-750 dark:hover:to-gray-700 transition-colors"
-                        onClick={() => toggleDayExpansion(day)}
+                  {Object.entries(filteredAndGroupedTopics()).map(
+                    ([day, dayTopics]) => (
+                      <div
+                        key={day}
+                        className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-shadow"
                       >
-                        <h3 className="font-medium text-sm text-gray-800 dark:text-gray-200">
-                          {day}
-                        </h3>
-                        <div className="flex items-center">
-                          <span className="text-xs mr-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
-                            {
-                              dayTopics.filter((topic) => topic.completed)
-                                .length
-                            }
-                            /{dayTopics.length}
-                          </span>
-                          {expandedDays[day] ? (
-                            <ChevronRight className="h-4 w-4 transform rotate-90 text-gray-500 dark:text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          )}
-                        </div>
-                      </button>
+                        <button
+                          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-750"
+                          onClick={() => toggleDayExpansion(day)}
+                        >
+                          <h3 className="font-medium text-sm text-gray-800 dark:text-gray-200">
+                            {day}
+                          </h3>
+                          <div className="flex items-center">
+                            <span className="text-xs mr-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+                              {
+                                dayTopics.filter(
+                                  (topic: any) => topic.completed
+                                ).length
+                              }
+                              /{dayTopics.length}
+                            </span>
+                            {expandedDays[day] ? (
+                              <ChevronRight className="h-4 w-4 transform rotate-90" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </div>
+                        </button>
 
-                      {expandedDays[day] && (
-                        <AnimatePresence>
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="bg-white dark:bg-gray-900"
-                          >
-                            <div className="p-2 space-y-1">
-                              {dayTopics.map((topic) => (
-                                <SidebarTopicItem
-                                  key={topic.id}
-                                  topic={topic}
-                                  isActive={topic.id === currentTopicId}
-                                  onClick={() => {
-                                    onSelectTopic(topic.id);
-                                    if (window.innerWidth < 768) {
-                                      setMobileSidebarOpen(false);
-                                    }
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          </motion.div>
-                        </AnimatePresence>
-                      )}
-                    </div>
-                  ))}
+                        {expandedDays[day] && (
+                          <AnimatePresence>
+                            <motion.div
+                              initial={{ height: 0 }}
+                              animate={{ height: "auto" }}
+                              exit={{ height: 0 }}
+                              className="bg-white dark:bg-gray-900"
+                            >
+                              <div className="p-2 space-y-1">
+                                {dayTopics.map((topic: any) => (
+                                  <SidebarTopicItem
+                                    key={topic.id}
+                                    topic={topic}
+                                    isActive={topic.id === currentTopicId}
+                                    onClick={() => {
+                                      onSelectTopic(topic.id);
+                                      if (window.innerWidth < 768) {
+                                        setMobileSidebarOpen(false);
+                                      }
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </motion.div>
+                          </AnimatePresence>
+                        )}
+                      </div>
+                    )
+                  )}
 
                   {isLoading && (
                     <div className="animate-pulse space-y-2 p-2">
@@ -663,7 +701,15 @@ export default function StudyLayout({
 }
 
 interface SidebarTopicItemProps {
-  topic: Topic;
+  topic: {
+    id: string;
+    name: string;
+    content: string;
+    isCompleted: boolean;
+    title?: string;
+    description?: string;
+    completed?: boolean;
+  };
   isActive: boolean;
   onClick: () => void;
 }
@@ -680,7 +726,7 @@ function SidebarTopicItem({ topic, isActive, onClick }: SidebarTopicItemProps) {
       onClick={onClick}
     >
       <div className="mt-0.5 mr-2 flex-shrink-0">
-        {topic.completed ? (
+        {topic.isCompleted || topic.completed ? (
           <CheckCircle className="h-4 w-4 text-green-500" />
         ) : (
           <Circle className="h-4 w-4 text-gray-300 dark:text-gray-600" />
@@ -690,13 +736,15 @@ function SidebarTopicItem({ topic, isActive, onClick }: SidebarTopicItemProps) {
         <p
           className={cn(
             "text-sm font-medium truncate",
-            topic.completed ? "text-gray-500 dark:text-gray-400" : ""
+            topic.isCompleted || topic.completed
+              ? "text-gray-500 dark:text-gray-400"
+              : ""
           )}
         >
-          {topic.title}
+          {topic.title || topic.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
-          {topic.description}
+          {topic.description || topic.content || "No description available"}
         </p>
       </div>
     </button>
