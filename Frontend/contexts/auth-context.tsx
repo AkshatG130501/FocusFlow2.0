@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { supabase, getCurrentUser } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 
@@ -63,7 +69,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, error }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        error,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

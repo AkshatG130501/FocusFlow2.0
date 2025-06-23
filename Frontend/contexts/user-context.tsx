@@ -120,14 +120,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("resumeFileType", file.type);
       
       // We can store a portion of the text for reference
-      const textPreview = parsedData.rawText.substring(0, 1000); // Store first 1000 chars
+      const textPreview = parsedData.rawText // Store first 1000 chars
       localStorage.setItem("resumeTextPreview", textPreview);
       
       // Store the fact that we have parsed resume data
       localStorage.setItem("hasResumeData", "true");
       
       // Store a preview of the raw text
-      localStorage.setItem("resumeTextPreview", parsedData.rawText.substring(0, 1000));
+      localStorage.setItem("resumeTextPreview", parsedData.rawText);
       
     } catch (error) {
       console.error("Error parsing resume:", error);

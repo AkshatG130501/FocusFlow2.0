@@ -16,6 +16,25 @@ export default function StudyPage() {
   useEffect(() => {
     const loadTopics = async () => {
       try {
+        const journeyId = localStorage.getItem('journeyId');
+        if (!journeyId) {
+          console.error("Journey ID not found in localStorage");
+          router.push('/');
+          return;
+        }
+
+        const roadmap = await fetch(`http://localhost:5000/api/roadmap/${journeyId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
+          },
+        });
+        if (!roadmap.ok) {
+          throw new Error("Failed to fetch roadmap");
+        }
+        const roadmapData = await roadmap.json();
+        console.log("Roadmap data:", roadmapData);
         // Add a small delay to show loading state
         await new Promise(resolve => setTimeout(resolve, 500));
         
@@ -56,7 +75,7 @@ export default function StudyPage() {
       // Update the topic completion status
       const updatedTopics = topics.map(topic => 
         topic.id === topicId 
-          ? { ...topic, completed: !topic.completed }
+          ? { ...topic, isCompleted: !topic.isCompleted }
           : topic
       );
       
@@ -70,13 +89,13 @@ export default function StudyPage() {
         const updatedRoadmapItems = roadmapItems.map(item => {
           const updatedItemTopics = item.topics.map(topic => {
             if (topic.id === topicId) {
-              return { ...topic, completed: !topic.completed };
+              return { ...topic, isCompleted: !topic.isCompleted };
             }
             return topic;
           });
           
           // Calculate if all topics are completed to mark the section as completed
-          const allTopicsCompleted = updatedItemTopics.every(topic => topic.completed);
+          const allTopicsCompleted = updatedItemTopics.every(topic => topic.isCompleted);
           
           return {
             ...item,
@@ -93,7 +112,7 @@ export default function StudyPage() {
     });
     
     if (currentTopic?.id === topicId) {
-      setCurrentTopic(prev => prev ? { ...prev, completed: !prev.completed } : null);
+      setCurrentTopic(prev => prev ? { ...prev, isCompleted: !prev.isCompleted } : null);
     }
   };
 

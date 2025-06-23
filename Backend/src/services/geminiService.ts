@@ -84,7 +84,7 @@ export async function generateRoadmap(
     1. Create exactly ${timelineInDays} sections, one for each day (Day 1, Day 2, etc.)
     2. Each day should have a title, description, and duration of 1 day
     3. Each day should contain specific topics to learn on that day
-    4. Each topic should have a title, description, and optional detailed content in markdown format
+    4. Each topic should have a title and description (DO NOT include detailed content)
 
     Respond with a JSON object in this exact format:
     {
@@ -103,8 +103,7 @@ export async function generateRoadmap(
               "id": "topic-1-1",
               "title": "Topic Title",
               "description": "Topic description",
-              "completed": false,
-              "content": "Optional markdown content with detailed information"
+              "completed": false
             }
           ]
         }
