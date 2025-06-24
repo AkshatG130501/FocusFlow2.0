@@ -12,10 +12,11 @@ import {
   CheckCircle,
   Circle,
   Search,
+  Loader2,
 } from "lucide-react";
 import UserProfile from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
-import { Day, Topic } from "@/lib/types";
+import { Day, Topic, TopicGenerationStatus } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -23,10 +24,11 @@ import { cn } from "@/lib/utils";
 interface StudyLayoutProps {
   children: React.ReactNode;
   topics: Topic[];
-  days: Day[]; // Add this line
+  days: Day[];
   currentTopicId?: string;
   isLoading: boolean;
   onSelectTopic: (topicId: string) => void;
+  generationStatus: TopicGenerationStatus | null;
 }
 
 export default function StudyLayout({
@@ -36,6 +38,7 @@ export default function StudyLayout({
   currentTopicId,
   isLoading,
   onSelectTopic,
+  generationStatus,
 }: StudyLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -280,6 +283,13 @@ export default function StudyLayout({
                 ></div>
               </div>
             </div>
+            
+            {generationStatus && !generationStatus.isComplete && (
+              <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 px-3 py-1 rounded-full text-xs">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Generating content: {generationStatus.percentComplete}%</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
