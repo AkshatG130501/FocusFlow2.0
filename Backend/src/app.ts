@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import resumeRoutes from "./routes/resumeRoutes";
 import roadmapRoutes from "./routes/roadmapRoutes";
 import topicContentRoutes from "./routes/topicContentRoutes";
+import aiRoutes from "./routes/aiRoutes";
 
 dotenv.config();
 
@@ -16,6 +17,8 @@ app.use(express.json());
 app.use("/api/resume-parser", resumeRoutes);
 app.use("/api/roadmap", roadmapRoutes);
 app.use("/api/topic-content", topicContentRoutes);
+// AI Routes
+app.use("/api/ai", aiRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

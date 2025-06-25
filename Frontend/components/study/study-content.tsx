@@ -23,6 +23,9 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 // Content is now generated dynamically based on topic information
 import SelectionToolbar from "./selection-toolbar";
+import { simplifyText } from "@/lib/api-client";
+import { useToast } from "@/hooks/use-toast";
+import { SimplifiedContentDialog } from "./simplified-content-dialog";
 
 /**
  * Generates default markdown content for a topic when no content is provided
@@ -86,6 +89,10 @@ export default function StudyContent({
     x: number;
     y: number;
   } | null>(null);
+  const [isSimplifying, setIsSimplifying] = useState(false);
+  const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
+  const [simplifyDialogOpen, setSimplifyDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   if (isLoading) {
     return <StudyContentSkeleton />;
@@ -124,11 +131,6 @@ export default function StudyContent({
     });
   };
 
-  const handleSimplify = (text: string) => {
-    console.log("Simplify:", text);
-    // Implement your simplify logic here
-  };
-
   const handleAskAI = (text: string) => {
     console.log("Ask AI:", text);
     // Implement your AI query logic here
@@ -137,6 +139,23 @@ export default function StudyContent({
   const handleGenerateQuiz = (text: string) => {
     console.log("Generate Quiz:", text);
     // Implement your quiz generation logic here
+  };
+
+  const handleSimplify = async (text: string) => {
+    if (!text.trim()) return;
+
+    setIsSimplifying(true);
+    setSelectedText(text);
+
+    try {
+      const simplified = await simplifyText(text);
+      setSimplifiedText(simplified);
+      setSimplifyDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to simplify text:", error);
+    } finally {
+      setIsSimplifying(false);
+    }
   };
 
   return (
@@ -285,11 +304,19 @@ export default function StudyContent({
         </div>
       </div>
 
+      <SimplifiedContentDialog
+        isOpen={simplifyDialogOpen}
+        onClose={() => setSimplifyDialogOpen(false)}
+        originalText={selectedText}
+        simplifiedText={simplifiedText || ''}
+      />
+
       <SelectionToolbar
         position={toolbarPosition}
         onSimplify={handleSimplify}
         onAskAI={handleAskAI}
         onGenerateQuiz={handleGenerateQuiz}
+        isSimplifying={isSimplifying}
       />
     </div>
   );
