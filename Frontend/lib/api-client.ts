@@ -3,7 +3,12 @@
  * Provides functions for interacting with backend APIs
  */
 
-import { ParsedResumeData, RoadmapItem, TopicContent, TopicGenerationStatus } from "./types";
+import {
+  ParsedResumeData,
+  RoadmapItem,
+  TopicContent,
+  TopicGenerationStatus,
+} from "./types";
 
 /**
  * Parse a resume file by sending it to the backend
@@ -51,20 +56,17 @@ export async function generateRoadmap(
   timelineInDays: number = 30
 ): Promise<RoadmapItem[]> {
   try {
-    const response = await fetch(
-      "http://localhost:5000/api/roadmap/generate",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          goal,
-          resumeText,
-          timelineInDays,
-        }),
-      }
-    );
+    const response = await fetch("http://localhost:5000/api/roadmap/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        goal,
+        resumeText,
+        timelineInDays,
+      }),
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -84,7 +86,9 @@ export async function generateRoadmap(
  * @param journeyId The ID of the journey/roadmap
  * @returns Promise resolving to success status
  */
-export async function startTopicContentGeneration(journeyId: string): Promise<boolean> {
+export async function startTopicContentGeneration(
+  journeyId: string
+): Promise<boolean> {
   try {
     const token = localStorage.getItem("accessToken") || "";
     const response = await fetch(
@@ -147,7 +151,9 @@ export async function getTopicContent(topicId: string): Promise<TopicContent> {
  * @param journeyId The ID of the journey/roadmap
  * @returns Promise resolving to the generation status
  */
-export async function getContentGenerationStatus(journeyId: string): Promise<TopicGenerationStatus> {
+export async function getContentGenerationStatus(
+  journeyId: string
+): Promise<TopicGenerationStatus> {
   try {
     const token = localStorage.getItem("accessToken") || "";
     const response = await fetch(
@@ -171,5 +177,32 @@ export async function getContentGenerationStatus(journeyId: string): Promise<Top
   } catch (error) {
     console.error("Error fetching generation status:", error);
     throw new Error("Failed to fetch generation status");
+  }
+}
+
+/**
+ * Simplify the given text using AI
+ * @param text The text to simplify
+ * @returns Promise resolving to the simplified text
+ */
+export async function simplifyText(text: string): Promise<string> {
+  try {
+    const response = await fetch("http://localhost:5000/api/ai/simplify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to simplify text");
+    }
+
+    const data = await response.json();
+    return data.simplified;
+  } catch (error) {
+    console.error("Error simplifying text:", error);
+    throw error;
   }
 }
