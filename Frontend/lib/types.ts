@@ -64,3 +64,18 @@ export interface ResumeData {
 export interface ParsedResumeData {
   rawText: string;
 }
+
+export interface TopicContent {
+  id: string;
+  name: string;
+  content: string;
+  isGenerating: boolean;
+}
+
+export interface TopicGenerationStatus {
+  journeyId: string;
+  totalTopics: number;
+  generatedTopics: number;
+  percentComplete: number;
+  isComplete: boolean;
+}

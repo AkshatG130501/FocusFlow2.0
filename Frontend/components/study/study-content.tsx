@@ -9,6 +9,7 @@ import {
   Circle,
   FileText,
   Loader2,
+  RefreshCcw,
 } from "lucide-react";
 import { Topic } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,9 @@ After mastering this topic, you'll be ready to move on to more advanced concepts
 
 interface StudyContentProps {
   topic: Topic | null;
+  topicContent: string;
   isLoading: boolean;
+  isContentLoading: boolean;
   onMarkComplete: (topicId: string) => void;
   onNavigateNext: () => void;
   onNavigatePrev: () => void;
@@ -67,7 +70,9 @@ interface StudyContentProps {
 
 export default function StudyContent({
   topic,
+  topicContent = "",
   isLoading,
+  isContentLoading = false,
   onMarkComplete,
   onNavigateNext,
   onNavigatePrev,
@@ -77,7 +82,10 @@ export default function StudyContent({
 }: StudyContentProps) {
   const [activeTab, setActiveTab] = useState("content");
   const [selectedText, setSelectedText] = useState("");
-  const [toolbarPosition, setToolbarPosition] = useState<{ x: number; y: number } | null>(null);
+  const [toolbarPosition, setToolbarPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   if (isLoading) {
     return <StudyContentSkeleton />;
@@ -107,12 +115,12 @@ export default function StudyContent({
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     const scrollY = window.scrollY || document.documentElement.scrollTop;
-    
+
     // Calculate position relative to the selected text
     setSelectedText(selection.toString());
     setToolbarPosition({
-      x: rect.left + (rect.width / 2), // Center horizontally over selection
-      y: rect.top + scrollY - 10 // Position slightly above selection with offset
+      x: rect.left + rect.width / 2, // Center horizontally over selection
+      y: rect.top + scrollY - 10, // Position slightly above selection with offset
     });
   };
 
@@ -196,7 +204,7 @@ export default function StudyContent({
             >
               <TabsContent value="content" className="mt-0">
                 <Card>
-                  <CardContent 
+                  <CardContent
                     className="pt-6 relative"
                     onMouseUp={(e) => {
                       e.stopPropagation(); // Prevent event bubbling
@@ -206,27 +214,54 @@ export default function StudyContent({
                       setToolbarPosition(null);
                     }}
                   >
-                    <div className="prose dark:prose-invert max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[
-                          rehypeRaw,
-                          [rehypeSanitize]
-                        ]}
-                        components={{
-                          div: ({ node, ...props }) => <div className="markdown-content" {...props} />
-                        }}
-                      >
-                        {topic.content || generateDefaultContent(topic)}
-                      </ReactMarkdown>
-                    </div>
+                    {isContentLoading ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                        <p className="text-lg font-medium">
+                          Loading content...
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          We&apos;re preparing your learning materials
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="prose dark:prose-invert max-w-none">
+                        {topicContent ? (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw, [rehypeSanitize]]}
+                            components={{
+                              div: ({ node, ...props }) => (
+                                <div className="markdown-content" {...props} />
+                              ),
+                            }}
+                          >
+                            {topicContent}
+                          </ReactMarkdown>
+                        ) : topic ? (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw, [rehypeSanitize]]}
+                            components={{
+                              div: ({ node, ...props }) => (
+                                <div className="markdown-content" {...props} />
+                              ),
+                            }}
+                          >
+                            {generateDefaultContent(topic)}
+                          </ReactMarkdown>
+                        ) : (
+                          <p>No content available. Please select a topic.</p>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
             </motion.div>
           </Tabs>
         </div>
-        
+
         <div className="flex justify-between mt-8">
           <Button
             variant="outline"

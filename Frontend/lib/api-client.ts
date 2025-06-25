@@ -3,7 +3,7 @@
  * Provides functions for interacting with backend APIs
  */
 
-import { ParsedResumeData, RoadmapItem } from "./types";
+import { ParsedResumeData, RoadmapItem, TopicContent, TopicGenerationStatus } from "./types";
 
 /**
  * Parse a resume file by sending it to the backend
@@ -76,5 +76,100 @@ export async function generateRoadmap(
   } catch (error) {
     console.error("Error generating roadmap:", error);
     throw error;
+  }
+}
+
+/**
+ * Start generating content for a journey, prioritizing Day 1 topics
+ * @param journeyId The ID of the journey/roadmap
+ * @returns Promise resolving to success status
+ */
+export async function startTopicContentGeneration(journeyId: string): Promise<boolean> {
+  try {
+    const token = localStorage.getItem("accessToken") || "";
+    const response = await fetch(
+      `http://localhost:5000/api/topic-content/generate-initial/${journeyId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to start content generation");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error starting content generation:", error);
+    return false;
+  }
+}
+
+/**
+ * Get content for a specific topic
+ * @param topicId The ID of the topic
+ * @returns Promise resolving to the topic content
+ */
+export async function getTopicContent(topicId: string): Promise<TopicContent> {
+  try {
+    const token = localStorage.getItem("accessToken") || "";
+    const response = await fetch(
+      `http://localhost:5000/api/topic-content/topic/${topicId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to fetch topic content");
+    }
+
+    const data = await response.json();
+    return data as TopicContent;
+  } catch (error) {
+    console.error("Error fetching topic content:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get content generation status for a journey
+ * @param journeyId The ID of the journey/roadmap
+ * @returns Promise resolving to the generation status
+ */
+export async function getContentGenerationStatus(journeyId: string): Promise<TopicGenerationStatus> {
+  try {
+    const token = localStorage.getItem("accessToken") || "";
+    const response = await fetch(
+      `http://localhost:5000/api/topic-content/status/${journeyId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to fetch generation status");
+    }
+
+    const data = await response.json();
+    return data as TopicGenerationStatus;
+  } catch (error) {
+    console.error("Error fetching generation status:", error);
+    throw new Error("Failed to fetch generation status");
   }
 }
