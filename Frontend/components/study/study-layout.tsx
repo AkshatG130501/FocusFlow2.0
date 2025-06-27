@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; // For GitHub-flavored markdown
 import {
   Menu,
   X,
@@ -13,13 +15,25 @@ import {
   Circle,
   Search,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
+import type { Options } from 'react-markdown';
 import UserProfile from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
 import { Day, Topic, TopicGenerationStatus } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/contexts/user-context";
+
+interface ChatMessage {
+  type: 'user' | 'ai';
+  content: string;
+  isLoading?: boolean;
+  isError?: boolean;
+  timestamp?: string;
+  id?: string;
+}
 
 interface StudyLayoutProps {
   children: React.ReactNode;
@@ -33,30 +47,128 @@ interface StudyLayoutProps {
 
 export default function StudyLayout({
   children,
-  topics,
-  days,
-  currentTopicId,
-  isLoading,
-  onSelectTopic,
-  generationStatus,
+  topics = [],
+  days = [],
+  currentTopicId = '',
+  isLoading = false,
+  onSelectTopic = (topicId: string) => {},
+  generationStatus = null,
 }: StudyLayoutProps) {
+  // Get user context at the top level of the component
+  const { userGoal, parsedResumeData } = useUser();
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>(
-    {}
-  );
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
   const [aiChatOpen, setAiChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<
-    { type: "user" | "ai"; content: string }[]
-  >([
-    {
-      type: "ai",
-      content:
-        "Hi there! I'm your AI study assistant. How can I help you today?",
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
+  
+  // Chat State
+  const [chatSessionId] = useState(() => `session_${Math.random().toString(36).substr(2, 9)}`);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  
+  // Load messages from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const saved = localStorage.getItem(`chat_${chatSessionId}`);
+      if (saved) {
+        setChatMessages(JSON.parse(saved));
+      } else {
+        // Initialize with welcome message if no saved messages
+        setChatMessages([{
+          type: "ai" as const,
+          content: "Hi there! I'm your AI study assistant. How can I help you today?",
+          timestamp: new Date().toISOString(),
+          id: `msg_${Date.now()}`,
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to load chat messages:', error);
+      // Initialize with error message if loading fails
+      setChatMessages([{
+        type: "ai" as const,
+        content: "I had trouble loading our conversation. Let's start fresh!",
+        timestamp: new Date().toISOString(),
+        id: `msg_${Date.now()}`,
+      }]);
+    }
+  }, [chatSessionId]);
+  
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      try {
+        localStorage.setItem(
+          `chat_${chatSessionId}`,
+          JSON.stringify(chatMessages)
+        );
+      } catch (error) {
+        console.error('Failed to save chat messages:', error);
+      }
+    }
+  }, [chatMessages, chatSessionId]);
+  
+  // Load messages from localStorage
+  const loadMessages = useCallback((): ChatMessage[] => {
+    if (typeof window === 'undefined') return [];
+    
+    try {
+      const saved = localStorage.getItem(`chat_${chatSessionId}`);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load chat messages:', error);
+    }
+    
+    // Default welcome message
+    return [{
+      type: 'ai' as const,
+      content: "Hi there! I'm your AI study assistant. How can I help you today?",
+      timestamp: new Date().toISOString(),
+      id: `msg_${Date.now()}`,
+    }];
+  }, [chatSessionId]);
+
+  // Load messages on mount
+  useEffect(() => {
+    setChatMessages(loadMessages());
+  }, [loadMessages]);
+  
+  // Clear chat history
+  const clearChat = () => {
+    if (confirm('Are you sure you want to clear the chat history?')) {
+      localStorage.removeItem(`chat_${chatSessionId}`);
+      setChatMessages([
+        {
+          type: "ai",
+          content: "Hi there! I'm your AI study assistant. How can I help you today?",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+  };
+  
+  // Retry failed message
+  const retryMessage = (index: number) => {
+    const messageToRetry = chatMessages[index - 1]?.content;
+    if (messageToRetry && chatMessages[index - 1]?.type === 'user') {
+      setChatMessages(prev => [...prev.slice(0, index)]);
+      setInputMessage(messageToRetry);
+      // Small delay to ensure state updates before sending
+      setTimeout(() => {
+        const sendButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (sendButton) sendButton.click();
+      }, 100);
+    }
+  };
 
   // Close sidebar on small screens when window resizes
   useEffect(() => {
@@ -91,15 +203,43 @@ export default function StudyLayout({
     return days;
   };
 
+  // Get the currently selected topic
+  const selectedTopic = useMemo(() => 
+    topics.find((topic: Topic) => topic.id === currentTopicId),
+    [topics, currentTopicId]
+  );
+
+  // Process topics by day
+  const processTopics = useCallback((daysToProcess: Day[]) => {
+    if (!daysToProcess) return {};
+    
+    return daysToProcess.reduce<Record<string, Topic[]>>((acc, day) => {
+      if (!day.topics) return acc;
+      
+      const dayKey = `Day ${day.dayNumber}`;
+      acc[dayKey] = day.topics.map((topic: Topic) => ({
+        ...topic,
+        content: topic.content || "No description available",
+        dayNumber: day.dayNumber,
+        daySummary: day.summary,
+      }));
+      return acc;
+    }, {});
+  }, []);
+
   // Filter topics based on search query
-  const filteredTopics = topics.filter((topic) =>
-    topic.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTopics = useMemo(() => 
+    topics.filter((topic) =>
+      topic.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [topics, searchQuery]
   );
 
   // Group the filtered topics by day
-  const groupedTopics = searchQuery
-    ? { "Search Results": filteredTopics }
-    : groupTopicsByDay();
+  const groupedTopics = useMemo(() => 
+    searchQuery ? { "Search Results": filteredTopics } : processTopics(days),
+    [searchQuery, filteredTopics, days, processTopics]
+  );
 
   // Initialize expanded state for days
   useEffect(() => {
@@ -122,75 +262,166 @@ export default function StudyLayout({
   };
 
   // Handle sending a chat message
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim() || isSending) return;
 
-    // Add user message
-    setChatMessages((prev) => [
-      ...prev,
-      { type: "user", content: inputMessage },
-    ]);
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString(),
+    };
+    
+    const loadingMessage: ChatMessage = {
+      id: `loading-${Date.now()}`,
+      type: 'ai',
+      content: '...',
+      isLoading: true,
+      timestamp: new Date().toISOString(),
+    };
+    
+    setChatMessages(prev => [...prev, userMessage, loadingMessage]);
+    setInputMessage('');
+    setIsSending(true);
 
-    // Clear input
-    setInputMessage("");
+    try {
+      const requestBody = {
+        message: inputMessage,
+        sessionId: chatSessionId,
+        currentTopicId: selectedTopic?.id,
+        roadmap: {
+          title: 'Study Roadmap',
+          description: 'Your personalized learning path',
+          days: days.map(day => ({
+            dayNumber: day.dayNumber,
+            summary: day.summary,
+            topics: day.topics?.map(topic => ({
+              id: topic.id,
+              name: topic.name,
+              content: topic.content,
+              isCompleted: topic.isCompleted
+            })) || []
+          }))
+        },
+        userGoal: {
+          goal: userGoal || 'Master the selected topics',
+          // Add any additional user-specific goal data here
+        },
+        resume: parsedResumeData ? {
+          rawText: parsedResumeData.rawText,
+          // Add any other relevant resume fields
+        } : undefined,
+        currentTopic: selectedTopic ? {
+          name: selectedTopic.name,
+          description: selectedTopic.description,
+          content: selectedTopic.content,
+          isCompleted: selectedTopic.isCompleted
+        } : undefined
+      };
 
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-      const responses = [
-        "I can help you understand that concept better. Let me explain...",
-        "That's a great question! Here's what you need to know...",
-        "Based on your current topic, I'd recommend focusing on these key points...",
-        "Let me find some relevant information for you on that subject.",
-        "I'd be happy to help with that. Here's my suggestion...",
-      ];
-      const randomResponse =
-        responses[Math.floor(Math.random() * responses.length)];
-      setChatMessages((prev) => [
-        ...prev,
-        { type: "ai", content: randomResponse },
-      ]);
-    }, 1000);
-  };
+      console.log('Sending request to AI with body:', JSON.stringify(requestBody, null, 2));
+      
+      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-  const completedTopics = topics.filter((topic) => topic.isCompleted).length;
-  const progress =
-    topics.length > 0 ? (completedTopics / topics.length) * 100 : 0;
+      console.log('Received response status:', response.status, response.statusText);
+      
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+        console.log('Parsed response data:', data);
+      } catch (e) {
+        console.error('Failed to parse JSON response:', e);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`);
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      if (!data || !data.response) {
+        throw new Error('Empty or invalid response from AI service');
+      }
+      
+      setChatMessages(prev => 
+        prev.map(msg => 
+          msg.id === loadingMessage.id 
+            ? { 
+                ...msg, 
+                content: data.response, 
+                isLoading: false,
+                timestamp: new Date().toISOString(),
+              } 
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error('Chat error:', error);
+      
+      setChatMessages(prev => 
+        prev.map(msg => 
+          msg.id === loadingMessage.id 
+            ? { 
+                ...msg, 
+                content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+                isLoading: false,
+                isError: true,
+                timestamp: new Date().toISOString(),
+              } 
+            : msg
+        )
+      );
+    } finally {
+      setIsSending(false);
+      
+      // Auto-scroll to bottom of chat
+      setTimeout(() => {
+        const chatContainer = document.querySelector('.chat-messages-container');
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [inputMessage, isSending, chatSessionId, selectedTopic?.id]);
 
-  // Update the processTopics function to handle the new data structure:
-  const processTopics = (days: Day[]) => {
-    const groupedByDay = days.reduce((acc: { [key: string]: Topic[] }, day) => {
-      const dayKey = `Day ${day.dayNumber}`;
-      acc[dayKey] = day.topics.map((topic) => ({
-        id: topic.id,
-        name: topic.name,
-        content: topic.content || "No description available",
-        isCompleted: topic.isCompleted,
-        dayNumber: day.dayNumber,
-        daySummary: day.summary,
-      }));
-      return acc;
-    }, {});
-
-    return groupedByDay;
-  };
-
-  // Update the filteredAndGroupedTopics function
-  const filteredAndGroupedTopics = () => {
-    if (!topics || topics.length === 0) return {};
+  // Calculate completed topics and progress
+  const completedTopicsCount = useMemo(() => 
+    topics.filter((topic: Topic) => topic.isCompleted).length, 
+    [topics]
+  );
+  
+  const progressPercentage = useMemo(() => 
+    topics.length > 0 ? (completedTopicsCount / topics.length) * 100 : 0,
+    [topics.length, completedTopicsCount]
+  );
+  
+  // Filter and group topics based on search query - alternative implementation
+  const filteredAndGroupedTopics = useCallback(() => {
+    if (!topics.length) return {};
 
     // If there's a search query, filter across all topics
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       const filtered = topics.filter(
-        (topic) =>
-          topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          topic.content?.toLowerCase().includes(searchQuery.toLowerCase())
+        (topic: Topic) =>
+          topic.name?.toLowerCase().includes(query) ||
+          (topic.content?.toLowerCase() || '').includes(query)
       );
       return { "Search Results": filtered };
     }
 
     // Otherwise, group by days
     return processTopics(days);
-  };
+  }, [topics, searchQuery, days, processTopics]);
 
   return (
     <div className="h-screen flex flex-col">
@@ -274,12 +505,12 @@ export default function StudyLayout({
 
             <div className="bg-gray-100 dark:bg-gray-800 h-8 rounded-full flex items-center px-3">
               <div className="text-xs font-medium whitespace-nowrap mr-2">
-                {completedTopics}/{topics.length} completed
+                {completedTopicsCount}/{topics.length} completed
               </div>
               <div className="bg-gray-200 dark:bg-gray-700 h-2 rounded-full w-20 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-[#51d0de] to-[#bf4aa8] h-full rounded-full"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
             </div>
@@ -522,34 +753,98 @@ export default function StudyLayout({
             >
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-medium">Ask AI Assistant</h3>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-medium">AI Study Assistant</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearChat}
+                    disabled={chatMessages.length <= 1}
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    Clear Chat
+                  </Button>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setAiChatOpen(false)}
+                  className="h-8 w-8"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
 
               {/* Chat Messages - Scrollable */}
               <div
-                className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+                className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar chat-messages-container"
                 style={{
                   overscrollBehavior: "contain",
                   maxHeight: "calc(100vh - 180px)",
                 }}
               >
                 {chatMessages.map((message, index) => (
-                  <div
-                    key={index}
+                  <div 
+                    key={message.id || index}
                     className={`${
                       message.type === "ai"
                         ? "bg-gray-100 dark:bg-gray-800"
                         : "bg-blue-100 dark:bg-blue-900 ml-auto"
+                    } ${
+                      message.isError ? 'border border-red-300 dark:border-red-700' : ''
                     } rounded-lg p-3 max-w-[85%]`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <div className="flex flex-col space-y-1">
+                      {message.isLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      ) : message.isError ? (
+                        <div className="flex flex-col">
+                          <p className="text-sm text-red-600 dark:text-red-400">
+                            {message.content}
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2 self-start text-xs h-6 px-2"
+                            onClick={() => retryMessage(index)}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Try Again
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="prose dark:prose-invert prose-sm max-w-none">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              a: (props: any) => (
+                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline" />
+                              ),
+                              code: (props: any) => {
+                                const isInline = !(props as any).inline;
+                                return (
+                                  <code 
+                                    {...props} 
+                                    className={`${isInline ? 'bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded' : 'block bg-gray-100 dark:bg-gray-800 p-4 rounded-md overflow-x-auto'}`} 
+                                  />
+                                );
+                              },
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                      {message.timestamp && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 self-end">
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -574,29 +869,33 @@ export default function StudyLayout({
                     variant="ghost"
                     size="icon"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    disabled={!inputMessage.trim()}
+                    disabled={!inputMessage.trim() || isSending}
                   >
-                    <svg
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M22 2L11 13"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M22 2L15 22L11 13L2 9L22 2Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    {isSending ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <svg
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M22 2L11 13"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M22 2L15 22L11 13L2 9L22 2Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
                   </Button>
                 </form>
               </div>
@@ -675,29 +974,33 @@ export default function StudyLayout({
                       variant="ghost"
                       size="icon"
                       className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                      disabled={!inputMessage.trim()}
+                      disabled={!inputMessage.trim() || isSending}
                     >
-                      <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M22 2L11 13"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M22 2L15 22L11 13L2 9L22 2Z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      {isSending ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M22 2L11 13"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M22 2L15 22L11 13L2 9L22 2Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
                     </Button>
                   </form>
                 </div>
