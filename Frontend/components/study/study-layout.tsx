@@ -67,39 +67,128 @@ export default function StudyLayout({
   const [aiChatOpen, setAiChatOpen] = useState(false);
   
   // Chat State
-  const [chatSessionId] = useState(() => `session_${Math.random().toString(36).substr(2, 9)}`);
+  const [chatSessionId] = useState(() => {
+    // Try to get existing session ID from localStorage, or create a new one
+    if (typeof window !== 'undefined') {
+      const savedSessionId = localStorage.getItem('chatSessionId');
+      if (savedSessionId) return savedSessionId;
+      
+      const newSessionId = `session_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('chatSessionId', newSessionId);
+      return newSessionId;
+    }
+    return `session_${Math.random().toString(36).substr(2, 9)}`;
+  });
+  
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   
-  // Load messages from localStorage on mount
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  // Fetch chat history from backend
+  const fetchChatHistory = useCallback(async () => {
+    try {
+      const journeyId = typeof window !== 'undefined' ? localStorage.getItem('journeyId') : null;
+      if (!journeyId) {
+        console.log('No journeyId found, using local storage only');
+        return null;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/ai/chat/history/${chatSessionId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.history || [];
+    } catch (error) {
+      console.error('Failed to fetch chat history from backend:', error);
+      return null;
+    }
+  }, [chatSessionId]);
+
+  // Load messages from backend and localStorage on mount
+  const loadMessages = useCallback(async (): Promise<ChatMessage[]> => {
+    if (typeof window === 'undefined') return [];
     
     try {
+      // First try to load from backend
+      const backendMessages = await fetchChatHistory();
+      
+      if (backendMessages && backendMessages.length > 0) {
+        // Convert backend format to frontend format
+        const formattedMessages = backendMessages.map((msg: any) => ({
+          id: msg.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: msg.role === 'user' ? 'user' : 'ai',
+          content: msg.content,
+          timestamp: msg.created_at || new Date().toISOString(),
+        }));
+        
+        // Save to localStorage for offline access
+        localStorage.setItem(`chat_${chatSessionId}`, JSON.stringify(formattedMessages));
+        return formattedMessages;
+      }
+      
+      // Fallback to localStorage if no backend messages
       const saved = localStorage.getItem(`chat_${chatSessionId}`);
       if (saved) {
-        setChatMessages(JSON.parse(saved));
-      } else {
-        // Initialize with welcome message if no saved messages
-        setChatMessages([{
-          type: "ai" as const,
-          content: "Hi there! I'm your AI study assistant. How can I help you today?",
-          timestamp: new Date().toISOString(),
-          id: `msg_${Date.now()}`,
-        }]);
+        return JSON.parse(saved);
       }
+      
+      // Default welcome message if no messages found
+      return [{
+        type: 'ai' as const,
+        content: "Hi there! I'm your AI study assistant. How can I help you today?",
+        timestamp: new Date().toISOString(),
+        id: `msg_${Date.now()}`,
+      }];
+      
     } catch (error) {
       console.error('Failed to load chat messages:', error);
-      // Initialize with error message if loading fails
-      setChatMessages([{
-        type: "ai" as const,
+      
+      // Try to load from localStorage as fallback
+      try {
+        const saved = localStorage.getItem(`chat_${chatSessionId}`);
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Failed to load from localStorage:', e);
+      }
+      
+      // If all else fails, return a fresh start message
+      return [{
+        type: 'ai' as const,
         content: "I had trouble loading our conversation. Let's start fresh!",
         timestamp: new Date().toISOString(),
         id: `msg_${Date.now()}`,
-      }]);
+      }];
     }
-  }, [chatSessionId]);
+  }, [chatSessionId, fetchChatHistory]);
+
+  // Load messages on mount
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        setIsLoadingHistory(true);
+        const messages = await loadMessages();
+        setChatMessages(messages);
+      } catch (error) {
+        console.error('Failed to initialize chat:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+    
+    initializeChat();
+  }, [loadMessages]);
   
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -115,44 +204,38 @@ export default function StudyLayout({
     }
   }, [chatMessages, chatSessionId]);
   
-  // Load messages from localStorage
-  const loadMessages = useCallback((): ChatMessage[] => {
-    if (typeof window === 'undefined') return [];
-    
-    try {
-      const saved = localStorage.getItem(`chat_${chatSessionId}`);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('Failed to load chat messages:', error);
-    }
-    
-    // Default welcome message
-    return [{
-      type: 'ai' as const,
-      content: "Hi there! I'm your AI study assistant. How can I help you today?",
-      timestamp: new Date().toISOString(),
-      id: `msg_${Date.now()}`,
-    }];
-  }, [chatSessionId]);
-
-  // Load messages on mount
-  useEffect(() => {
-    setChatMessages(loadMessages());
-  }, [loadMessages]);
-  
   // Clear chat history
-  const clearChat = () => {
-    if (confirm('Are you sure you want to clear the chat history?')) {
-      localStorage.removeItem(`chat_${chatSessionId}`);
-      setChatMessages([
-        {
-          type: "ai",
-          content: "Hi there! I'm your AI study assistant. How can I help you today?",
+  const clearChat = async () => {
+    if (confirm('Are you sure you want to clear the chat history? This will remove all messages from this chat.')) {
+      try {
+        // Clear local storage
+        localStorage.removeItem(`chat_${chatSessionId}`);
+        
+        // Clear messages in state
+        setChatMessages([
+          {
+            id: `msg_${Date.now()}`,
+            type: "ai" as const,
+            content: "Hi there! I'm your AI study assistant. How can I help you today?",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        
+        // Optional: Call backend to clear history if needed
+        // const response = await fetch(`/api/ai/chat/clear/${chatSessionId}`, { method: 'POST' });
+        // if (!response.ok) throw new Error('Failed to clear chat history on server');
+        
+      } catch (error) {
+        console.error('Error clearing chat history:', error);
+        // Show error message to user
+        setChatMessages(prev => [...prev, {
+          id: `error_${Date.now()}`,
+          type: 'ai' as const,
+          content: 'Failed to clear chat history. Please try again.',
+          isError: true,
           timestamp: new Date().toISOString(),
-        },
-      ]);
+        }]);
+      }
     }
   };
   
@@ -319,7 +402,16 @@ export default function StudyLayout({
         } : undefined
       };
 
-      console.log('Sending request to AI with body:', JSON.stringify(requestBody, null, 2));
+      // Get journeyId from localStorage
+      const journeyId = typeof window !== 'undefined' ? localStorage.getItem('journeyId') : null;
+      if (!journeyId) {
+        throw new Error('Journey ID not found. Please go back and create a new roadmap.');
+      }
+
+      console.log('Sending request to AI with body:', JSON.stringify({
+        ...requestBody,
+        journeyId,
+      }, null, 2));
       
       const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/ai/chat`, {
@@ -327,7 +419,10 @@ export default function StudyLayout({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          ...requestBody,
+          journeyId,
+        }),
       });
 
       console.log('Received response status:', response.status, response.statusText);
