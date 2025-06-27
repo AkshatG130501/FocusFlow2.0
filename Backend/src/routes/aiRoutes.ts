@@ -309,6 +309,56 @@ const getChatSession = (sessionId: string): ChatSession => {
   return chat;
 }
 
+// Text simplification endpoint
+interface SimplifyRequest {
+  text: string;
+}
+
+/**
+ * @route POST /api/ai/simplify
+ * @desc Simplify complex text to make it more accessible
+ * @access Public
+ * @param {string} text - The text to be simplified
+ * @returns {Object} Simplified version of the input text
+ */
+router.post('/simplify', chatLimiter, async (req: Request<{}, {}, SimplifyRequest>, res: Response) => {
+  try {
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: 'No text provided' });
+    }
+
+    const prompt = `As an expert educator, simplify the following text to make it more accessible 
+and easier to understand. Maintain the key concepts but use simpler language and shorter sentences.
+Break it down into bullet points if it helps clarity.
+
+Original text: "${text}"
+
+Guidelines:
+- Use clear, everyday language
+- Keep technical terms only if essential
+- Break long sentences into shorter ones
+- Maintain the original meaning
+- Add examples where helpful
+
+Simplified version:`;
+
+    // Generate content using the model
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const simplified = response.text();
+
+    res.json({ simplified });
+  } catch (error: any) {
+    console.error('Error simplifying text:', error);
+    res.status(500).json({
+      error: 'Failed to simplify text',
+      details: error.message || 'Unknown error',
+    });
+  }
+});
+
 // Error handling middleware
 router.use(errorHandler);
 
