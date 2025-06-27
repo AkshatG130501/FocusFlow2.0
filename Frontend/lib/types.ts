@@ -26,6 +26,7 @@ export interface Topic {
   id: string;
   name: string;
   content: string;
+  description?: string;
   isCompleted: boolean;
   dayNumber: number;
   daySummary: string;
