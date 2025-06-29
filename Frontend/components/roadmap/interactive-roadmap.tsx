@@ -34,7 +34,9 @@ function WeekCard({
   onToggleExpand: (id: string) => void;
 }) {
   // Calculate progress
-  const completedTopics = item.topics.filter((topic) => topic.completed).length;
+  const completedTopics = item.topics.filter(
+    (topic) => topic.isCompleted
+  ).length;
   const progress = (completedTopics / item.topics.length) * 100;
 
   return (
@@ -142,12 +144,12 @@ function WeekCard({
                       <p
                         className={cn(
                           "text-sm font-medium",
-                          topic.completed
+                          topic.isCompleted
                             ? "text-muted-foreground line-through"
                             : "text-foreground"
                         )}
                       >
-                        {topic.title}
+                        {topic.name}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {topic.description}
@@ -177,9 +179,7 @@ export default function InteractiveRoadmap({
   useEffect(() => {
     setAnimatingLines(
       Object.fromEntries(
-        Array(items.length - 1)
-          .keys()
-          .map((i) => [i, true])
+        Array.from(Array(items.length - 1).keys()).map((i) => [i, true])
       )
     );
   }, [items]);

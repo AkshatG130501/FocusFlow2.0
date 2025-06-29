@@ -31,7 +31,9 @@ export default function RoadmapItemCard({
   onToggleComplete,
 }: RoadmapItemCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const completedTopics = item.topics.filter((topic) => topic.completed).length;
+  const completedTopics = item.topics.filter(
+    (topic) => topic.isCompleted
+  ).length;
   const progress = (completedTopics / item.topics.length) * 100;
   const dayNumber = item.title.match(/Day (\d+):/)?.[1] || "";
 
@@ -170,12 +172,12 @@ function TopicItem({
     <li
       className={cn(
         "flex items-start p-2.5 rounded-md gap-2.5",
-        topic.completed ? "bg-muted/30" : "bg-card",
+        topic.isCompleted ? "bg-muted/30" : "bg-card",
         "hover:bg-muted/40 transition-colors"
       )}
     >
       <div className="mt-0.5">
-        {topic.completed ? (
+        {topic.isCompleted ? (
           <CheckCircle className="h-3.5 w-3.5 text-secondary" />
         ) : (
           <Circle className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -185,12 +187,12 @@ function TopicItem({
         <p
           className={cn(
             "text-sm font-medium truncate",
-            topic.completed
+            topic.isCompleted
               ? "text-muted-foreground line-through"
               : "text-foreground"
           )}
         >
-          {topic.title}
+          {topic.name}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
           {topic.description}

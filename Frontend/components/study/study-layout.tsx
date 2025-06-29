@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'; // For GitHub-flavored markdown
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm"; // For GitHub-flavored markdown
 import {
   Menu,
   X,
@@ -17,7 +17,7 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
-import type { Options } from 'react-markdown';
+import type { Options } from "react-markdown";
 import UserProfile from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
 import { Day, Topic, TopicGenerationStatus } from "@/lib/types";
@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@/contexts/user-context";
 
 interface ChatMessage {
-  type: 'user' | 'ai';
+  type: "user" | "ai";
   content: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -49,7 +49,7 @@ export default function StudyLayout({
   children,
   topics = [],
   days = [],
-  currentTopicId = '',
+  currentTopicId = "",
   isLoading = false,
   onSelectTopic = (topicId: string) => {},
   generationStatus = null,
@@ -58,49 +58,56 @@ export default function StudyLayout({
   const { userGoal, parsedResumeData } = useUser();
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  
+  const [searchQuery, setSearchQuery] = useState("");
+
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
   const [aiChatOpen, setAiChatOpen] = useState(false);
-  
+
   // Chat State
   const [chatSessionId] = useState(() => {
     // Try to get existing session ID from localStorage, or create a new one
-    if (typeof window !== 'undefined') {
-      const savedSessionId = localStorage.getItem('chatSessionId');
+    if (typeof window !== "undefined") {
+      const savedSessionId = localStorage.getItem("chatSessionId");
       if (savedSessionId) return savedSessionId;
-      
+
       const newSessionId = `session_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('chatSessionId', newSessionId);
+      localStorage.setItem("chatSessionId", newSessionId);
       return newSessionId;
     }
     return `session_${Math.random().toString(36).substr(2, 9)}`;
   });
-  
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  
+
   // Fetch chat history from backend
   const fetchChatHistory = useCallback(async () => {
     try {
-      const journeyId = typeof window !== 'undefined' ? localStorage.getItem('journeyId') : null;
+      const journeyId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("journeyId")
+          : null;
       if (!journeyId) {
-        console.log('No journeyId found, using local storage only');
+        console.log("No journeyId found, using local storage only");
         return null;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/ai/chat/history/${chatSessionId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const apiUrl =
+        process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+      const response = await fetch(
+        `${apiUrl}/api/ai/chat/history/${chatSessionId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -109,50 +116,57 @@ export default function StudyLayout({
       const data = await response.json();
       return data.history || [];
     } catch (error) {
-      console.error('Failed to fetch chat history from backend:', error);
+      console.error("Failed to fetch chat history from backend:", error);
       return null;
     }
   }, [chatSessionId]);
 
   // Load messages from backend and localStorage on mount
   const loadMessages = useCallback(async (): Promise<ChatMessage[]> => {
-    if (typeof window === 'undefined') return [];
-    
+    if (typeof window === "undefined") return [];
+
     try {
       // First try to load from backend
       const backendMessages = await fetchChatHistory();
-      
+
       if (backendMessages && backendMessages.length > 0) {
         // Convert backend format to frontend format
         const formattedMessages = backendMessages.map((msg: any) => ({
-          id: msg.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type: msg.role === 'user' ? 'user' : 'ai',
+          id:
+            msg.id ||
+            `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: msg.role === "user" ? "user" : "ai",
           content: msg.content,
           timestamp: msg.created_at || new Date().toISOString(),
         }));
-        
+
         // Save to localStorage for offline access
-        localStorage.setItem(`chat_${chatSessionId}`, JSON.stringify(formattedMessages));
+        localStorage.setItem(
+          `chat_${chatSessionId}`,
+          JSON.stringify(formattedMessages)
+        );
         return formattedMessages;
       }
-      
+
       // Fallback to localStorage if no backend messages
       const saved = localStorage.getItem(`chat_${chatSessionId}`);
       if (saved) {
         return JSON.parse(saved);
       }
-      
+
       // Default welcome message if no messages found
-      return [{
-        type: 'ai' as const,
-        content: "Hi there! I'm your AI study assistant. How can I help you today?",
-        timestamp: new Date().toISOString(),
-        id: `msg_${Date.now()}`,
-      }];
-      
+      return [
+        {
+          type: "ai" as const,
+          content:
+            "Hi there! I'm your AI study assistant. How can I help you today?",
+          timestamp: new Date().toISOString(),
+          id: `msg_${Date.now()}`,
+        },
+      ];
     } catch (error) {
-      console.error('Failed to load chat messages:', error);
-      
+      console.error("Failed to load chat messages:", error);
+
       // Try to load from localStorage as fallback
       try {
         const saved = localStorage.getItem(`chat_${chatSessionId}`);
@@ -160,16 +174,18 @@ export default function StudyLayout({
           return JSON.parse(saved);
         }
       } catch (e) {
-        console.error('Failed to load from localStorage:', e);
+        console.error("Failed to load from localStorage:", e);
       }
-      
+
       // If all else fails, return a fresh start message
-      return [{
-        type: 'ai' as const,
-        content: "I had trouble loading our conversation. Let's start fresh!",
-        timestamp: new Date().toISOString(),
-        id: `msg_${Date.now()}`,
-      }];
+      return [
+        {
+          type: "ai" as const,
+          content: "I had trouble loading our conversation. Let's start fresh!",
+          timestamp: new Date().toISOString(),
+          id: `msg_${Date.now()}`,
+        },
+      ];
     }
   }, [chatSessionId, fetchChatHistory]);
 
@@ -181,15 +197,15 @@ export default function StudyLayout({
         const messages = await loadMessages();
         setChatMessages(messages);
       } catch (error) {
-        console.error('Failed to initialize chat:', error);
+        console.error("Failed to initialize chat:", error);
       } finally {
         setIsLoadingHistory(false);
       }
     };
-    
+
     initializeChat();
   }, [loadMessages]);
-  
+
   // Save messages to localStorage whenever they change
   useEffect(() => {
     if (chatMessages.length > 0) {
@@ -199,55 +215,64 @@ export default function StudyLayout({
           JSON.stringify(chatMessages)
         );
       } catch (error) {
-        console.error('Failed to save chat messages:', error);
+        console.error("Failed to save chat messages:", error);
       }
     }
   }, [chatMessages, chatSessionId]);
-  
+
   // Clear chat history
   const clearChat = async () => {
-    if (confirm('Are you sure you want to clear the chat history? This will remove all messages from this chat.')) {
+    if (
+      confirm(
+        "Are you sure you want to clear the chat history? This will remove all messages from this chat."
+      )
+    ) {
       try {
         // Clear local storage
         localStorage.removeItem(`chat_${chatSessionId}`);
-        
+
         // Clear messages in state
         setChatMessages([
           {
             id: `msg_${Date.now()}`,
             type: "ai" as const,
-            content: "Hi there! I'm your AI study assistant. How can I help you today?",
+            content:
+              "Hi there! I'm your AI study assistant. How can I help you today?",
             timestamp: new Date().toISOString(),
           },
         ]);
-        
+
         // Optional: Call backend to clear history if needed
         // const response = await fetch(`/api/ai/chat/clear/${chatSessionId}`, { method: 'POST' });
         // if (!response.ok) throw new Error('Failed to clear chat history on server');
-        
       } catch (error) {
-        console.error('Error clearing chat history:', error);
+        console.error("Error clearing chat history:", error);
         // Show error message to user
-        setChatMessages(prev => [...prev, {
-          id: `error_${Date.now()}`,
-          type: 'ai' as const,
-          content: 'Failed to clear chat history. Please try again.',
-          isError: true,
-          timestamp: new Date().toISOString(),
-        }]);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `error_${Date.now()}`,
+            type: "ai" as const,
+            content: "Failed to clear chat history. Please try again.",
+            isError: true,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
       }
     }
   };
-  
+
   // Retry failed message
   const retryMessage = (index: number) => {
     const messageToRetry = chatMessages[index - 1]?.content;
-    if (messageToRetry && chatMessages[index - 1]?.type === 'user') {
-      setChatMessages(prev => [...prev.slice(0, index)]);
+    if (messageToRetry && chatMessages[index - 1]?.type === "user") {
+      setChatMessages((prev) => [...prev.slice(0, index)]);
       setInputMessage(messageToRetry);
       // Small delay to ensure state updates before sending
       setTimeout(() => {
-        const sendButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const sendButton = document.querySelector(
+          'button[type="submit"]'
+        ) as HTMLButtonElement;
         if (sendButton) sendButton.click();
       }, 100);
     }
@@ -287,18 +312,18 @@ export default function StudyLayout({
   };
 
   // Get the currently selected topic
-  const selectedTopic = useMemo(() => 
-    topics.find((topic: Topic) => topic.id === currentTopicId),
+  const selectedTopic = useMemo(
+    () => topics.find((topic: Topic) => topic.id === currentTopicId),
     [topics, currentTopicId]
   );
 
   // Process topics by day
   const processTopics = useCallback((daysToProcess: Day[]) => {
     if (!daysToProcess) return {};
-    
+
     return daysToProcess.reduce<Record<string, Topic[]>>((acc, day) => {
       if (!day.topics) return acc;
-      
+
       const dayKey = `Day ${day.dayNumber}`;
       acc[dayKey] = day.topics.map((topic: Topic) => ({
         ...topic,
@@ -311,16 +336,18 @@ export default function StudyLayout({
   }, []);
 
   // Filter topics based on search query
-  const filteredTopics = useMemo(() => 
-    topics.filter((topic) =>
-      topic.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
+  const filteredTopics = useMemo(
+    () =>
+      topics.filter((topic) =>
+        topic.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
     [topics, searchQuery]
   );
 
   // Group the filtered topics by day
-  const groupedTopics = useMemo(() => 
-    searchQuery ? { "Search Results": filteredTopics } : processTopics(days),
+  const groupedTopics = useMemo(
+    () =>
+      searchQuery ? { "Search Results": filteredTopics } : processTopics(days),
     [searchQuery, filteredTopics, days, processTopics]
   );
 
@@ -350,21 +377,21 @@ export default function StudyLayout({
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       content: inputMessage,
       timestamp: new Date().toISOString(),
     };
-    
+
     const loadingMessage: ChatMessage = {
       id: `loading-${Date.now()}`,
-      type: 'ai',
-      content: '...',
+      type: "ai",
+      content: "...",
       isLoading: true,
       timestamp: new Date().toISOString(),
     };
-    
-    setChatMessages(prev => [...prev, userMessage, loadingMessage]);
-    setInputMessage('');
+
+    setChatMessages((prev) => [...prev, userMessage, loadingMessage]);
+    setInputMessage("");
     setIsSending(true);
 
     try {
@@ -373,51 +400,69 @@ export default function StudyLayout({
         sessionId: chatSessionId,
         currentTopicId: selectedTopic?.id,
         roadmap: {
-          title: 'Study Roadmap',
-          description: 'Your personalized learning path',
-          days: days.map(day => ({
+          title: "Study Roadmap",
+          description: "Your personalized learning path",
+          days: days.map((day) => ({
             dayNumber: day.dayNumber,
             summary: day.summary,
-            topics: day.topics?.map(topic => ({
-              id: topic.id,
-              name: topic.name,
-              content: topic.content,
-              isCompleted: topic.isCompleted
-            })) || []
-          }))
+            topics:
+              day.topics?.map((topic) => ({
+                id: topic.id,
+                name: topic.name,
+                content: topic.content,
+                isCompleted: topic.isCompleted,
+              })) || [],
+          })),
         },
         userGoal: {
-          goal: userGoal || 'Master the selected topics',
+          goal: userGoal || "Master the selected topics",
           // Add any additional user-specific goal data here
         },
-        resume: parsedResumeData ? {
-          rawText: parsedResumeData.rawText,
-          // Add any other relevant resume fields
-        } : undefined,
-        currentTopic: selectedTopic ? {
-          name: selectedTopic.name,
-          description: selectedTopic.description,
-          content: selectedTopic.content,
-          isCompleted: selectedTopic.isCompleted
-        } : undefined
+        resume: parsedResumeData
+          ? {
+              rawText: parsedResumeData.rawText,
+              // Add any other relevant resume fields
+            }
+          : undefined,
+        currentTopic: selectedTopic
+          ? {
+              name: selectedTopic.name,
+              description: selectedTopic.description,
+              content: selectedTopic.content,
+              isCompleted: selectedTopic.isCompleted,
+            }
+          : undefined,
       };
 
       // Get journeyId from localStorage
-      const journeyId = typeof window !== 'undefined' ? localStorage.getItem('journeyId') : null;
+      const journeyId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("journeyId")
+          : null;
       if (!journeyId) {
-        throw new Error('Journey ID not found. Please go back and create a new roadmap.');
+        throw new Error(
+          "Journey ID not found. Please go back and create a new roadmap."
+        );
       }
 
-      console.log('Sending request to AI with body:', JSON.stringify({
-        ...requestBody,
-        journeyId,
-      }, null, 2));
-      
-      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:5000';
+      console.log(
+        "Sending request to AI with body:",
+        JSON.stringify(
+          {
+            ...requestBody,
+            journeyId,
+          },
+          null,
+          2
+        )
+      );
+
+      const apiUrl =
+        process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
       const response = await fetch(`${apiUrl}/api/ai/chat`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...requestBody,
@@ -425,62 +470,73 @@ export default function StudyLayout({
         }),
       });
 
-      console.log('Received response status:', response.status, response.statusText);
-      
+      console.log(
+        "Received response status:",
+        response.status,
+        response.statusText
+      );
+
       const responseText = await response.text();
-      console.log('Raw response:', responseText);
-      
-      let data;
+      console.log("Raw response:", responseText);
+
+      let data: { response?: string; error?: string };
       try {
         data = responseText ? JSON.parse(responseText) : {};
-        console.log('Parsed response data:', data);
+        console.log("Parsed response data:", data);
       } catch (e) {
-        console.error('Failed to parse JSON response:', e);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`);
+        console.error("Failed to parse JSON response:", e);
+        throw new Error(
+          `Invalid JSON response: ${responseText.substring(0, 200)}...`
+        );
       }
-      
+
       if (!response.ok) {
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
-      
+
       if (!data || !data.response) {
-        throw new Error('Empty or invalid response from AI service');
+        throw new Error("Empty or invalid response from AI service");
       }
-      
-      setChatMessages(prev => 
-        prev.map(msg => 
-          msg.id === loadingMessage.id 
-            ? { 
-                ...msg, 
-                content: data.response, 
+
+      setChatMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === loadingMessage.id
+            ? {
+                ...msg,
+                content:
+                  data.response || "Sorry, I couldn't process your request.",
                 isLoading: false,
                 timestamp: new Date().toISOString(),
-              } 
+              }
             : msg
         )
       );
     } catch (error) {
-      console.error('Chat error:', error);
-      
-      setChatMessages(prev => 
-        prev.map(msg => 
-          msg.id === loadingMessage.id 
-            ? { 
-                ...msg, 
-                content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+      console.error("Chat error:", error);
+
+      setChatMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === loadingMessage.id
+            ? {
+                ...msg,
+                content: `Sorry, I encountered an error: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`,
                 isLoading: false,
                 isError: true,
                 timestamp: new Date().toISOString(),
-              } 
+              }
             : msg
         )
       );
     } finally {
       setIsSending(false);
-      
+
       // Auto-scroll to bottom of chat
       setTimeout(() => {
-        const chatContainer = document.querySelector('.chat-messages-container');
+        const chatContainer = document.querySelector(
+          ".chat-messages-container"
+        );
         if (chatContainer) {
           chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -489,16 +545,17 @@ export default function StudyLayout({
   }, [inputMessage, isSending, chatSessionId, selectedTopic?.id]);
 
   // Calculate completed topics and progress
-  const completedTopicsCount = useMemo(() => 
-    topics.filter((topic: Topic) => topic.isCompleted).length, 
+  const completedTopicsCount = useMemo(
+    () => topics.filter((topic: Topic) => topic.isCompleted).length,
     [topics]
   );
-  
-  const progressPercentage = useMemo(() => 
-    topics.length > 0 ? (completedTopicsCount / topics.length) * 100 : 0,
+
+  const progressPercentage = useMemo(
+    () =>
+      topics.length > 0 ? (completedTopicsCount / topics.length) * 100 : 0,
     [topics.length, completedTopicsCount]
   );
-  
+
   // Filter and group topics based on search query - alternative implementation
   const filteredAndGroupedTopics = useCallback(() => {
     if (!topics.length) return {};
@@ -509,7 +566,7 @@ export default function StudyLayout({
       const filtered = topics.filter(
         (topic: Topic) =>
           topic.name?.toLowerCase().includes(query) ||
-          (topic.content?.toLowerCase() || '').includes(query)
+          (topic.content?.toLowerCase() || "").includes(query)
       );
       return { "Search Results": filtered };
     }
@@ -609,11 +666,13 @@ export default function StudyLayout({
                 ></div>
               </div>
             </div>
-            
+
             {generationStatus && !generationStatus.isComplete && (
               <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 px-3 py-1 rounded-full text-xs">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Generating content: {generationStatus.percentComplete}%</span>
+                <span>
+                  Generating content: {generationStatus.percentComplete}%
+                </span>
               </div>
             )}
           </div>
@@ -751,7 +810,7 @@ export default function StudyLayout({
                             <span className="text-xs mr-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
                               {
                                 dayTopics.filter(
-                                  (topic: any) => topic.completed
+                                  (topic: any) => topic.isCompleted
                                 ).length
                               }
                               /{dayTopics.length}
@@ -850,9 +909,9 @@ export default function StudyLayout({
               <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <h3 className="font-medium">AI Study Assistant</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={clearChat}
                     disabled={chatMessages.length <= 1}
                     className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -879,22 +938,33 @@ export default function StudyLayout({
                 }}
               >
                 {chatMessages.map((message, index) => (
-                  <div 
+                  <div
                     key={message.id || index}
                     className={`${
                       message.type === "ai"
                         ? "bg-gray-100 dark:bg-gray-800"
                         : "bg-blue-100 dark:bg-blue-900 ml-auto"
                     } ${
-                      message.isError ? 'border border-red-300 dark:border-red-700' : ''
+                      message.isError
+                        ? "border border-red-300 dark:border-red-700"
+                        : ""
                     } rounded-lg p-3 max-w-[85%]`}
                   >
                     <div className="flex flex-col space-y-1">
                       {message.isLoading ? (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          <div
+                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          ></div>
                         </div>
                       ) : message.isError ? (
                         <div className="flex flex-col">
@@ -913,18 +983,27 @@ export default function StudyLayout({
                         </div>
                       ) : (
                         <div className="prose dark:prose-invert prose-sm max-w-none">
-                          <ReactMarkdown 
+                          <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
                               a: (props: any) => (
-                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline" />
+                                <a
+                                  {...props}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                                />
                               ),
                               code: (props: any) => {
                                 const isInline = !(props as any).inline;
                                 return (
-                                  <code 
-                                    {...props} 
-                                    className={`${isInline ? 'bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded' : 'block bg-gray-100 dark:bg-gray-800 p-4 rounded-md overflow-x-auto'}`} 
+                                  <code
+                                    {...props}
+                                    className={`${
+                                      isInline
+                                        ? "bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded"
+                                        : "block bg-gray-100 dark:bg-gray-800 p-4 rounded-md overflow-x-auto"
+                                    }`}
                                   />
                                 );
                               },
@@ -936,7 +1015,10 @@ export default function StudyLayout({
                       )}
                       {message.timestamp && (
                         <span className="text-xs text-gray-500 dark:text-gray-400 self-end">
-                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(message.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       )}
                     </div>
