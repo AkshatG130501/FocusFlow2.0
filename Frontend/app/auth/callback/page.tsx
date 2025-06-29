@@ -29,26 +29,26 @@ export default function AuthCallback() {
 
           try {
             // Send data to backend
-            const response = await fetch(
-              "http://localhost:5000/api/roadmap/save",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${data.session.access_token}`,
+            const apiUrl =
+              process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+              "http://localhost:5000";
+            const response = await fetch(`${apiUrl}/api/roadmap/save`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${data.session.access_token}`,
+              },
+              body: JSON.stringify({
+                userId: data.session.user.id,
+                roadmapItems: userDataToSync.roadmapItems, // Changed this line
+                userData: {
+                  // Added structured userData
+                  userGoal: userDataToSync.userGoal,
+                  timeline: userDataToSync.timeline,
+                  resumeData: userDataToSync.resumeData,
                 },
-                body: JSON.stringify({
-                  userId: data.session.user.id,
-                  roadmapItems: userDataToSync.roadmapItems, // Changed this line
-                  userData: {
-                    // Added structured userData
-                    userGoal: userDataToSync.userGoal,
-                    timeline: userDataToSync.timeline,
-                    resumeData: userDataToSync.resumeData,
-                  },
-                }),
-              }
-            );
+              }),
+            });
 
             if (!response.ok) {
               throw new Error("Failed to sync user data");

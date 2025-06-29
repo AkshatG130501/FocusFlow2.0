@@ -22,13 +22,12 @@ export async function parseResumeWithBackend(
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(
-      "http://localhost:5000/api/resume-parser/parse",
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    const apiUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+    const response = await fetch(`${apiUrl}/api/resume-parser/parse`, {
+      method: "POST",
+      body: formData,
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -56,7 +55,9 @@ export async function generateRoadmap(
   timelineInDays: number = 30
 ): Promise<RoadmapItem[]> {
   try {
-    const response = await fetch("http://localhost:5000/api/roadmap/generate", {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+    const response = await fetch(`${apiUrl}/api/roadmap/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -91,8 +92,10 @@ export async function startTopicContentGeneration(
 ): Promise<boolean> {
   try {
     const token = localStorage.getItem("accessToken") || "";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
     const response = await fetch(
-      `http://localhost:5000/api/topic-content/generate-initial/${journeyId}`,
+      `${apiUrl}/api/topic-content/generate-initial/${journeyId}`,
       {
         method: "POST",
         headers: {
@@ -122,8 +125,10 @@ export async function startTopicContentGeneration(
 export async function getTopicContent(topicId: string): Promise<TopicContent> {
   try {
     const token = localStorage.getItem("accessToken") || "";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
     const response = await fetch(
-      `http://localhost:5000/api/topic-content/topic/${topicId}`,
+      `${apiUrl}/api/topic-content/topic/${topicId}`,
       {
         method: "GET",
         headers: {
@@ -156,8 +161,10 @@ export async function getContentGenerationStatus(
 ): Promise<TopicGenerationStatus> {
   try {
     const token = localStorage.getItem("accessToken") || "";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
     const response = await fetch(
-      `http://localhost:5000/api/topic-content/status/${journeyId}`,
+      `${apiUrl}/api/topic-content/status/${journeyId}`,
       {
         method: "GET",
         headers: {
@@ -187,7 +194,9 @@ export async function getContentGenerationStatus(
  */
 export async function simplifyText(text: string): Promise<string> {
   try {
-    const response = await fetch("http://localhost:5000/api/ai/simplify", {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+    const response = await fetch(`${apiUrl}/api/ai/simplify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

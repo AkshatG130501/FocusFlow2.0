@@ -4,8 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import StudyLayout from "@/components/study/study-layout";
 import StudyContent from "@/components/study/study-content";
-import { Topic, RoadmapItem, Day, TopicContent, TopicGenerationStatus } from "@/lib/types";
-import { startTopicContentGeneration, getTopicContent, getContentGenerationStatus } from "@/lib/api-client";
+import {
+  Topic,
+  RoadmapItem,
+  Day,
+  TopicContent,
+  TopicGenerationStatus,
+} from "@/lib/types";
+import {
+  startTopicContentGeneration,
+  getTopicContent,
+  getContentGenerationStatus,
+} from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function StudyPage() {
@@ -24,56 +34,64 @@ export default function StudyPage() {
     isCompleted: boolean;
   } | null>(null);
   const [updateLoading, setUpdateLoading] = useState<string | null>(null);
-  const [generationStatus, setGenerationStatus] = useState<TopicGenerationStatus | null>(null);
+  const [generationStatus, setGenerationStatus] =
+    useState<TopicGenerationStatus | null>(null);
   const [contentCache, setContentCache] = useState<Record<string, string>>({});
   const router = useRouter();
   const { toast } = useToast();
 
   // Load topic content when current topic changes
-  const loadTopicContent = useCallback(async (topicId: string) => {
-    if (!topicId) return;
-    
-    // Check if content is already in cache
-    if (contentCache[topicId]) {
-      setCurrentTopicContent(contentCache[topicId]);
-      return;
-    }
-    
-    setIsContentLoading(true);
-    
-    try {
-      const content = await getTopicContent(topicId);
-      
-      // Update cache and current content
-      setContentCache(prev => ({
-        ...prev,
-        [topicId]: content.content
-      }));
-      
-      setCurrentTopicContent(content.content);
-    } catch (error: any) {
-      console.error("Failed to load topic content:", error);
-      
-      // Set a helpful message for the user
-      setCurrentTopicContent("Content is currently being generated. Please check back in a moment.");
-      
-      // Show a toast notification
-      toast({
-        title: "Content Loading",
-        description: error.message || "We're generating this topic's content. It will be available shortly.",
-        duration: 5000,
-      });
-    } finally {
-      setIsContentLoading(false);
-    }
-  }, [contentCache, toast]);
+  const loadTopicContent = useCallback(
+    async (topicId: string) => {
+      if (!topicId) return;
+
+      // Check if content is already in cache
+      if (contentCache[topicId]) {
+        setCurrentTopicContent(contentCache[topicId]);
+        return;
+      }
+
+      setIsContentLoading(true);
+
+      try {
+        const content = await getTopicContent(topicId);
+
+        // Update cache and current content
+        setContentCache((prev) => ({
+          ...prev,
+          [topicId]: content.content,
+        }));
+
+        setCurrentTopicContent(content.content);
+      } catch (error: any) {
+        console.error("Failed to load topic content:", error);
+
+        // Set a helpful message for the user
+        setCurrentTopicContent(
+          "Content is currently being generated. Please check back in a moment."
+        );
+
+        // Show a toast notification
+        toast({
+          title: "Content Loading",
+          description:
+            error.message ||
+            "We're generating this topic's content. It will be available shortly.",
+          duration: 5000,
+        });
+      } finally {
+        setIsContentLoading(false);
+      }
+    },
+    [contentCache, toast]
+  );
 
   // Check content generation status periodically
   const checkGenerationStatus = useCallback(async (journeyId: string) => {
     try {
       const status = await getContentGenerationStatus(journeyId);
       setGenerationStatus(status);
-      
+
       // If not complete, check again in 10 seconds
       if (!status.isComplete) {
         setTimeout(() => checkGenerationStatus(journeyId), 10000);
@@ -95,18 +113,17 @@ export default function StudyPage() {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:5000/api/roadmap/${journeyId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                localStorage.getItem("accessToken") || ""
-              }`,
-            },
-          }
-        );
+        const apiUrl =
+          process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+        const response = await fetch(`${apiUrl}/api/roadmap/${journeyId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${
+              localStorage.getItem("accessToken") || ""
+            }`,
+          },
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch roadmap");
@@ -131,23 +148,24 @@ export default function StudyPage() {
             setCurrentTopic(topics[0]);
           }
         }
-        
+
         try {
           // Start content generation for this journey
           await startTopicContentGeneration(journeyId);
-          
+
           // Start checking generation status
           checkGenerationStatus(journeyId);
         } catch (error: any) {
           console.error("Failed to start content generation:", error);
           toast({
             title: "Content Generation Error",
-            description: error.message || "Failed to start content generation. Content may be limited.",
+            description:
+              error.message ||
+              "Failed to start content generation. Content may be limited.",
             variant: "destructive",
             duration: 5000,
           });
         }
-        
       } catch (error) {
         console.error("Failed to load study content:", error);
         toast({
@@ -181,9 +199,10 @@ export default function StudyPage() {
 
       const topic = allTopics.find((t) => t.id === topicId);
       if (!topic) return;
-
+      const apiUrl =
+        process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
       const response = await fetch(
-        `http://localhost:5000/api/roadmap/${journeyId}/topic/${topicId}`,
+        `${apiUrl}/api/roadmap/${journeyId}/topic/${topicId}`,
         {
           method: "PATCH",
           headers: {
