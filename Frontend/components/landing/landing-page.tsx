@@ -3,19 +3,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import {
-  BrainCircuit,
-  Sparkles,
-  BookOpen,
-  Target,
-  Menu,
-} from "lucide-react";
+import Image from "next/image";
+import { BrainCircuit, Sparkles, BookOpen, Target, Menu } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import GoalInput from "./goal-input";
 import OnboardingModal from "../onboarding/onboarding-modal";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import boltBadge from "../../assets/bolt_badge.png";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -35,7 +31,7 @@ export default function LandingPage() {
     if (goal.trim()) {
       // Parse and save the goal to context (which will save to localStorage)
       parseGoalInput(goal);
-      
+
       // Increment submit count to force re-render of child components
       setSubmitCount((prev) => prev + 1);
       setIsModalOpen(true);
@@ -85,6 +81,7 @@ export default function LandingPage() {
             <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
               FocusFlow
             </span>
+            <Image src={boltBadge} alt="Bolt Badge" width={24} height={24} className="ml-2" />
           </div>
 
           <div className="hidden md:flex items-center space-x-6">
