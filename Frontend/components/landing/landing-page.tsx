@@ -147,15 +147,6 @@ export default function LandingPage() {
 
       <main className="flex-grow">
         {/* Hero Section */}
-        <Link href="https://bolt.new/">
-          <Image
-            src={boltBadge}
-            alt="Bolt Badge"
-            width={72}
-            height={72}
-            className="ml-10 absolute mt-10 z-50 hover:scale-110 transition-transform duration-300 ease-in-out"
-          />
-        </Link>
         <section className="py-20 md:py-[15vh] container mx-auto px-4">
           <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto min-h-[60vh]">
             <motion.div
